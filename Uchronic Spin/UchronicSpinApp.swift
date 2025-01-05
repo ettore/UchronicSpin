@@ -8,10 +8,25 @@
 import SwiftUI
 
 @main
+
 struct UchronicSpinApp: App {
+    @StateObject private var authState = AuthState()
+    private let authInteractor: AuthInteractor
+
+    init() {
+        let state = AuthState()
+        self._authState = StateObject(wrappedValue: state)
+        self.authInteractor = AuthInteractor(state: state)
+    }
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            AuthView(state: authState, interactor: authInteractor)
+                .onOpenURL { url in
+                    Task {
+                        await authInteractor.handleCallback(url: url)
+                    }
+                }
         }
     }
 }
