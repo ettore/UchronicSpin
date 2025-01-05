@@ -35,7 +35,7 @@ final class AuthInteractor: AuthInteracting {
             self.requestToken = token
             self.requestTokenSecret = secret
 
-            if let url = URL(string: "https://discogs.com/oauth/authorize?oauth_token=\(token)") {
+            if let url = service.getAuthorizationURL(token: token) {
                 await UIApplication.shared.open(url)
             }
         } catch {

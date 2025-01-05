@@ -10,35 +10,123 @@ import CryptoKit
 
 protocol OAuthAPI: Sendable {
     var verifierParam: String { get }
-    func getRequestToken() async throws -> (token: String, secret: String)
-    func getAccessToken(requestToken: String,
-                        requestTokenSecret: String,
-                        verifier: String) async throws -> (token: String,
-                                                           secret: String)
+    func getToken(requestToken: String?,
+                  requestTokenSecret: String?,
+                  verifier: String?) async throws -> (token: String,
+                                                      secret: String)
+    func getAuthorizationURL(token: String) -> URL?
 }
 
 
-/*
- - An actor automatically serializes all access to its properties and methods,
- which ensures that only one caller can directly interact with the actor at any
- given time. That in turn gives us complete protection against data races,
- since all mutations will be performed serially, one after the other.
- - Race conditions are still possible. While data races are essentially
- memory corruption issues, race conditions are logical issues that occur
- when multiple operations end up happening in an unpredictable order.
+extension OAuthAPI {
+    func getRequestToken() async throws -> (token: String, secret: String) {
+        return try await getToken(requestToken: nil,
+                                  requestTokenSecret: nil,
+                                  verifier: nil)
+    }
 
- Actors are a great tool to allow safe concurrent access to its underlying state.
- However it will require us to interact with it in an asynchronous manner,
- which usually does make such calls somewhat more complex (and slower) to
- perform 
- */
+    func getAccessToken(requestToken: String,
+                        requestTokenSecret: String,
+                        verifier: String) async throws -> (token: String,
+                                                           secret: String) {
+        return try await getToken(requestToken: requestToken,
+                                  requestTokenSecret: requestTokenSecret,
+                                  verifier: verifier)
+    }
+}
+
 actor OAuthService: OAuthAPI {
     let verifierParam: String = "oauth_verifier"
     private let consumerKey = CONSUMER_KEY
     private let consumerSecret = CONSUMER_SECRET
     private let baseURL = "https://api.discogs.com"
-    private var requestToken: String?
-    private var requestTokenSecret: String?
+
+    nonisolated func getAuthorizationURL(token: String) -> URL? {
+        URL(string: "https://discogs.com/oauth/authorize?oauth_token=\(token)")
+    }
+
+    /// Fetches the access token if `requestToken`, `tokenSecret` and
+    /// `verifier` are present, otherwise fetches request token.
+    func getToken(requestToken: String? = nil,
+                  requestTokenSecret: String? = nil,
+                  verifier: String? = nil) async throws -> (token: String,
+                                                            secret: String) {
+        var parameters: [String: String] = [
+            "oauth_consumer_key": consumerKey,
+            "oauth_nonce": generateNonce(),
+            "oauth_signature_method": "PLAINTEXT",
+            "oauth_timestamp": generateTimestamp()
+        ]
+
+        let url: String
+        let isFetchingAccessToken: Bool
+        if let requestToken = requestToken,
+           let requestTokenSecret = requestTokenSecret,
+           let verifier = verifier
+        {
+            isFetchingAccessToken = true
+            parameters["oauth_token"] = requestToken
+            parameters["oauth_signature"] = "\(consumerSecret)&\(requestTokenSecret)"
+            parameters[verifierParam] = verifier
+            url = "\(baseURL)/oauth/access_token"
+        } else {
+            isFetchingAccessToken = false
+            parameters["oauth_signature"] = "\(consumerSecret)&"
+            parameters["oauth_callback"] = "uchronicspin://oauth-callback"
+            url = "\(baseURL)/oauth/request_token"
+        }
+
+        // format params
+        let authHeader = parameters
+            .sorted { $0.key < $1.key }
+            .map { "\($0.key)=\"\($0.value)\"" }
+            .joined(separator: ", ")
+
+        // create request
+        var request = URLRequest(url: URL(string: url)!)
+        if isFetchingAccessToken {
+            request.httpMethod = "POST"
+        }
+        request.setValue("OAuth \(authHeader)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.setValue("uchronicspin", forHTTPHeaderField: "User-Agent")
+
+        // submit request
+        let (data, _) = try await URLSession.shared.data(for: request)
+
+        // parse response
+        let response = String(data: data, encoding: .utf8)
+
+        // sanity checks
+        guard let response = response, response.contains("=") else {
+            if isFetchingAccessToken {
+                throw AuthError.invalidAccessToken
+            } else {
+                throw AuthError.invalidRequestToken
+            }
+        }
+
+        let params = Dictionary(
+            uniqueKeysWithValues: response
+                .components(separatedBy: "&")
+                .compactMap { $0.components(separatedBy: "=") }
+                .compactMap { ($0[0], $0[1]) }
+        )
+
+        guard
+            let token = params["oauth_token"],
+            let secret = params["oauth_token_secret"],
+            !token.isEmpty, !secret.isEmpty
+        else {
+            if isFetchingAccessToken {
+                throw AuthError.invalidAccessToken
+            } else {
+                throw AuthError.invalidRequestToken
+            }
+        }
+
+        return (token, secret)
+    }
 
     private func generateNonce() -> String {
         let uuid = UUID().uuidString
@@ -47,121 +135,5 @@ actor OAuthService: OAuthAPI {
 
     private func generateTimestamp() -> String {
         return String(Int(Date().timeIntervalSince1970))
-    }
-
-    private func generateSignature(method: String, url: String, parameters: [String: String], tokenSecret: String = "") -> String {
-        let sortedParams = parameters.sorted { $0.key < $1.key }
-        let paramString = sortedParams.map { "\($0.key)=\($0.value)" }.joined(separator: "&")
-
-        let signatureBase = [
-            method,
-            url.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? "",
-            paramString.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) ?? ""
-        ].joined(separator: "&")
-
-        let signingKey = "\(consumerSecret)&\(tokenSecret)"
-        let signature = HMAC<Insecure.SHA1>.authenticationCode(
-            for: Data(signatureBase.utf8),
-            using: SymmetricKey(data: Data(signingKey.utf8))
-        )
-
-        return Data(signature).base64EncodedString()
-    }
-
-    func getRequestToken() async throws -> (token: String, secret: String) {
-        var parameters = [
-            "oauth_consumer_key": consumerKey,
-            "oauth_nonce": generateNonce(),
-            "oauth_signature_method": "PLAINTEXT",
-            "oauth_timestamp": generateTimestamp(),
-            "oauth_callback": "uchronicspin://oauth-callback"
-        ]
-
-        let url = "\(baseURL)/oauth/request_token"
-        parameters["oauth_signature"] = "\(consumerSecret)&"
-
-        let authHeader = parameters
-            .sorted { $0.key < $1.key }
-            .map { "\($0.key)=\"\($0.value)\"" }
-            .joined(separator: ", ")
-
-        var request = URLRequest(url: URL(string: url)!)
-        request.setValue("OAuth \(authHeader)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        request.setValue("uchronicspin", forHTTPHeaderField: "User-Agent")
-
-        let (data, _) = try await URLSession.shared.data(for: request)
-        guard let response = String(data: data, encoding: .utf8) else {
-            throw AuthError.invalidRequestToken
-        }
-
-        let params = Dictionary(
-            uniqueKeysWithValues: response
-                .components(separatedBy: "&")
-                .map { $0.components(separatedBy: "=") }
-                .map { ($0[0], $0[1]) }
-        )
-
-        guard let token = params["oauth_token"],
-              let secret = params["oauth_token_secret"] else {
-            throw AuthError.invalidRequestToken
-        }
-
-        return (token, secret)
-    }
-
-    func getAccessToken(requestToken: String,
-                        requestTokenSecret: String,
-                        verifier: String) async throws -> (token: String,
-                                                           secret: String) {
-        let parameters = [
-            "oauth_consumer_key": consumerKey,
-            "oauth_nonce": generateNonce(),
-            "oauth_token": requestToken,
-            "oauth_signature": "\(consumerSecret)&\(requestTokenSecret)",
-            "oauth_signature_method": "PLAINTEXT",
-            "oauth_timestamp": generateTimestamp(),
-            "oauth_verifier": verifier
-        ]
-        let url = "\(baseURL)/oauth/access_token"
-
-        let authHeader = parameters
-            .sorted { $0.key < $1.key }
-            .map { "\($0.key)=\"\($0.value)\"" }
-            .joined(separator: ", ")
-
-        var request = URLRequest(url: URL(string: url)!)
-        request.httpMethod = "POST"
-        request.setValue("OAuth \(authHeader)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        request.setValue("uchronicspin", forHTTPHeaderField: "User-Agent")
-
-        let (data, _) = try await URLSession.shared.data(for: request)
-        let response = String(data: data, encoding: .utf8)
-
-        guard
-            let response = response,
-            response.contains("oauth_token="),
-            response.contains("oauth_token_secret=")
-        else {
-            throw AuthError.invalidAccessToken
-        }
-
-        let params = Dictionary(
-            uniqueKeysWithValues: response
-                .components(separatedBy: "&")
-                .map { $0.components(separatedBy: "=") }
-                .map { ($0[0], $0[1]) }
-        )
-
-        guard
-            let token = params["oauth_token"],
-            let secret = params["oauth_token_secret"],
-            !token.isEmpty, !secret.isEmpty
-        else {
-            throw AuthError.invalidAccessToken
-        }
-
-        return (token, secret)
     }
 }
