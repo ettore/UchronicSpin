@@ -8,6 +8,7 @@
 import Foundation
 
 enum AuthError: LocalizedError {
+    case missingRequestToken
     case invalidRequestToken
     case invalidAccessToken
     case userCancelled
@@ -15,8 +16,10 @@ enum AuthError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .invalidRequestToken:
+        case .missingRequestToken:
             return "Failed to obtain request token"
+        case .invalidRequestToken:
+            return "Invalid request token"
         case .invalidAccessToken:
             return "Failed to obtain access token"
         case .userCancelled:

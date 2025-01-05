@@ -17,28 +17,21 @@ protocol AuthInteracting: Sendable {
 @MainActor
 final class AuthInteractor: AuthInteracting {
     private let state: AuthState
-    private let service: OAuthService
+    private let service: OAuthAPI
     private var requestToken: String?
     private var requestTokenSecret: String?
 
-    init(state: AuthState, service: OAuthService = OAuthService()) {
+    init(state: AuthState, service: OAuthAPI = OAuthService()) {
         self.state = state
         self.service = service
     }
 
-    nonisolated func startAuth() async {
-        await doStartAuth()
-    }
-
-    nonisolated func handleCallback(url: URL) async {
-        await doHandleCallback(url: url)
-    }
-
-    private func doStartAuth() async {
+    func startAuth() async {
         state.isAuthenticating = true
 
         do {
             let (token, secret) = try await service.getRequestToken()
+
             self.requestToken = token
             self.requestTokenSecret = secret
 
@@ -51,15 +44,25 @@ final class AuthInteractor: AuthInteracting {
         }
     }
 
-    @MainActor
-    private func doHandleCallback(url: URL) async {
-        guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
-              let requestToken = self.requestToken,
-              let requestTokenSecret = self.requestTokenSecret,
-              let verifier = components.queryItems?.first(where: { $0.name == "oauth_verifier" })?.value
-        else {
-            state.authError = .invalidRequestToken
+    func handleCallback(url: URL) async {
+        defer {
             state.isAuthenticating = false
+        }
+
+        let components = URLComponents(url: url, resolvingAgainstBaseURL: true)
+        let verifier = components?.queryItems?.first(where: {
+            $0.name == service.verifierParam
+        })?.value
+
+        guard let requestToken = requestToken,
+              let requestTokenSecret = requestTokenSecret
+        else {
+            state.authError = .missingRequestToken
+            return
+        }
+
+        guard let verifier = verifier else {
+            state.authError = .invalidRequestToken
             return
         }
 
@@ -73,10 +76,8 @@ final class AuthInteractor: AuthInteracting {
             state.accessToken = token
             state.accessTokenSecret = secret
             state.isAuthenticated = true
-            state.isAuthenticating = false
         } catch {
             state.authError = error as? AuthError ?? .networkError(error)
-            state.isAuthenticating = false
         }
     }
 }
