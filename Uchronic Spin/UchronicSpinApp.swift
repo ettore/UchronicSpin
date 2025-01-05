@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct Uchronic_SpinApp: App {
+struct UchronicSpinApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
