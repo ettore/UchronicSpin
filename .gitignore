@@ -4,19 +4,6 @@ build
 DerivedData
 xcuserdata
 
-# Cordova plugins for Capacitor
-capacitor-cordova-ios-plugins
-
-# Generated Config files
-App/App/capacitor.config.json
-App/App/config.xml
-
-# Capacitor build products
-App/build
-App/Pods
-App/App/public
-App/output
-
 # Xcode build products
 App/App.xcarchive
 App/archive.plist
