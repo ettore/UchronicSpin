@@ -8,7 +8,6 @@
 import SwiftUI
 
 @main
-
 struct UchronicSpinApp: App {
     @StateObject private var authState = AuthState()
     private let authInteractor: AuthInteractor
@@ -21,12 +20,17 @@ struct UchronicSpinApp: App {
 
     var body: some Scene {
         WindowGroup {
-            AuthView(state: authState, interactor: authInteractor)
-                .onOpenURL { url in
-                    Task {
-                        await authInteractor.handleCallback(url: url)
+            if authState.isAuthenticated {
+                Color.green
+                    .ignoresSafeArea()
+            } else {
+                AuthView(state: authState, interactor: authInteractor)
+                    .onOpenURL { url in
+                        Task {
+                            await authInteractor.handleCallback(url: url)
+                        }
                     }
-                }
+            }
         }
     }
 }

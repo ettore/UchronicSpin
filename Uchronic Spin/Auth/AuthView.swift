@@ -11,7 +11,7 @@ struct AuthView: View {
     @StateObject private var state: AuthState
     private let interactor: AuthInteracting
     private let presenter: AuthPresenting
-
+    
     init(state: AuthState = AuthState(),
          interactor: AuthInteracting? = nil,
          presenter: AuthPresenting? = nil) {
@@ -19,39 +19,34 @@ struct AuthView: View {
         self.interactor = interactor ?? AuthInteractor(state: state)
         self.presenter = presenter ?? AuthPresenter()
     }
-
+    
     var body: some View {
         Group {
-            if state.isAuthenticated {
-                Color.green
-                    .ignoresSafeArea()
-            } else {
-                VStack(spacing: 24) {
-                    Text(presenter.welcomeMessage)
-                        .font(.title)
-                        .fontWeight(.bold)
-
-                    Button(presenter.authButtonTitle) {
-                        Task {
-                            await interactor.startAuth()
-                        }
+            VStack(spacing: 24) {
+                Text(presenter.welcomeMessage)
+                    .font(.title)
+                    .fontWeight(.bold)
+                
+                Button(presenter.authButtonTitle) {
+                    Task {
+                        await interactor.startAuth()
                     }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(state.isAuthenticating)
                 }
-                .padding()
-                .alert("Authentication Error",
-                       isPresented: Binding(
-                        get: { state.authError != nil },
-                        set: { if !$0 { state.authError = nil } }
-                       )) {
-                           Button("OK", role: .cancel) {}
-                       } message: {
-                           if let error = state.authError {
-                               Text(error.localizedDescription)
-                           }
-                       }
+                .buttonStyle(.borderedProminent)
+                .disabled(state.isAuthenticating)
             }
+            .padding()
+            .alert("Authentication Error",
+                   isPresented: Binding(
+                    get: { state.authError != nil },
+                    set: { if !$0 { state.authError = nil } }
+                   )) {
+                       Button("OK", role: .cancel) {}
+                   } message: {
+                       if let error = state.authError {
+                           Text(error.localizedDescription)
+                       }
+                   }
         }
     }
 }
