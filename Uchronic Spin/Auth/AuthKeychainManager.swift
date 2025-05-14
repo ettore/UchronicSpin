@@ -25,7 +25,7 @@ actor AuthKeychainManager: AuthKeychainManaging {
     func saveCredentials(token: String, secret: String) async throws {
         guard let tokenData = token.data(using: .utf8),
               let secretData = secret.data(using: .utf8) else {
-            throw KeychainError.unexpectedData
+            throw KeychainError.wrongDataFormat
         }
 
         try keychainService.save(key: tokenKey, data: tokenData)
@@ -39,7 +39,7 @@ actor AuthKeychainManager: AuthKeychainManaging {
 
             guard let token = String(data: tokenData, encoding: .utf8),
                   let secret = String(data: secretData, encoding: .utf8) else {
-                throw KeychainError.unexpectedData
+                throw KeychainError.wrongDataFormat
             }
 
             return (token, secret)

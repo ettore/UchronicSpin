@@ -12,7 +12,7 @@ enum KeychainError: Error {
     case loadFailure(OSStatus)
     case deleteFailure(OSStatus)
     case itemNotFound
-    case unexpectedData
+    case wrongDataFormat
 }
 
 protocol KeychainServicing: Sendable {
@@ -70,7 +70,7 @@ final class KeychainService: KeychainServicing {
         }
 
         guard let data = result as? Data else {
-            throw KeychainError.unexpectedData
+            throw KeychainError.wrongDataFormat
         }
 
         return data
