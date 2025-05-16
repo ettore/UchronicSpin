@@ -12,6 +12,7 @@ enum AuthError: LocalizedError {
     case invalidRequestToken
     case invalidAccessToken
     case userCancelled
+    case keychainError(KeychainError)
     case networkError(Error)
 
     var errorDescription: String? {
@@ -26,6 +27,8 @@ enum AuthError: LocalizedError {
             return "Authentication was cancelled"
         case .networkError(let error):
             return "Network error: \(error.localizedDescription)"
+        case .keychainError(let keychainError):
+            return "Keychain error: \(keychainError.localizedDescription)"
         }
     }
 }

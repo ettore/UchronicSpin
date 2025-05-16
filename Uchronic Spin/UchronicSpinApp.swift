@@ -19,7 +19,7 @@ struct UchronicSpinApp: App {
 
         // Check for existing credentials at launch
         Task { [self] in
-            await self.authInteractor.checkExistingAuth()
+            await self.authInteractor.loadExistingAuth()
         }
     }
 
@@ -41,7 +41,7 @@ struct UchronicSpinApp: App {
                 AuthView(state: authState, interactor: authInteractor)
                     .onOpenURL { url in
                         Task {
-                            await authInteractor.handleCallback(url: url)
+                            await authInteractor.setUpStateFetchingAccessToken(from: url)
                         }
                     }
             }

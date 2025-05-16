@@ -11,8 +11,8 @@ import SwiftUI
 
 protocol AuthInteracting: Sendable {
     func startAuth() async
-    func handleCallback(url: URL) async
-    func checkExistingAuth() async
+    func setUpStateFetchingAccessToken(from: URL) async
+    func loadExistingAuth() async
     func signOut() async
 }
 
@@ -32,7 +32,7 @@ final class AuthInteractor: AuthInteracting {
         self.keychainManager = keychainManager
     }
 
-    func checkExistingAuth() async {
+    func loadExistingAuth() async {
         do {
             if let credentials = try await keychainManager.loadCredentials() {
                 state.accessToken = credentials.token
@@ -63,15 +63,10 @@ final class AuthInteractor: AuthInteracting {
         }
     }
 
-    func handleCallback(url: URL) async {
+    func setUpStateFetchingAccessToken(from url: URL) async {
         defer {
             state.isAuthenticating = false
         }
-
-        let components = URLComponents(url: url, resolvingAgainstBaseURL: true)
-        let verifier = components?.queryItems?.first(where: {
-            $0.name == service.verifierParam
-        })?.value
 
         guard let requestToken = requestToken,
               let requestTokenSecret = requestTokenSecret
@@ -80,7 +75,13 @@ final class AuthInteractor: AuthInteracting {
             return
         }
 
+        let components = URLComponents(url: url, resolvingAgainstBaseURL: true)
+        let verifier = components?.queryItems?.first(where: {
+            $0.name == service.verifierParam
+        })?.value
+
         guard let verifier = verifier else {
+            // if we can't find the verifier, we probably had a bad request token
             state.authError = .invalidRequestToken
             return
         }
@@ -93,14 +94,20 @@ final class AuthInteractor: AuthInteracting {
             )
 
             // Save credentials to keychain
-            try await keychainManager.saveCredentials(token: token, secret: secret)
-
+            try await keychainManager.saveCredentials(token: token,
+                                                      secret: secret)
             // Update state
             state.accessToken = token
             state.accessTokenSecret = secret
             state.isAuthenticated = true
         } catch {
-            state.authError = error as? AuthError ?? .networkError(error)
+            if let authError = error as? AuthError {
+                state.authError = authError
+            } else if let keychainError = error as? KeychainError {
+                state.authError = .keychainError(keychainError)
+            } else {
+                state.authError = .networkError(error)
+            }
         }
     }
 

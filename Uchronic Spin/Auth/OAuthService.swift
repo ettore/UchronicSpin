@@ -8,6 +8,17 @@
 import Foundation
 import CryptoKit
 
+
+protocol DataFetching: Sendable {
+    func data(for request: URLRequest) async throws -> (Data, URLResponse)
+}
+
+extension URLSession: DataFetching {}
+
+
+// MARK: -
+
+
 protocol OAuthAPI: Sendable {
     var verifierParam: String { get }
     func getToken(requestToken: String?,
@@ -16,7 +27,6 @@ protocol OAuthAPI: Sendable {
                                                       secret: String)
     func getAuthorizationURL(token: String) -> URL?
 }
-
 
 extension OAuthAPI {
     func getRequestToken() async throws -> (token: String, secret: String) {
@@ -35,18 +45,33 @@ extension OAuthAPI {
     }
 }
 
+
+// MARK: -
+
+
 actor OAuthService: OAuthAPI {
     let verifierParam: String = "oauth_verifier"
-    private let consumerKey = CONSUMER_KEY
-    private let consumerSecret = CONSUMER_SECRET
-    private let baseURL = "https://api.discogs.com"
+    private let consumerKey: String
+    private let consumerSecret: String
+    private let baseURL: String
+    private let urlSession: DataFetching
+
+    init(consumerKey: String = CONSUMER_KEY,
+         consumerSecret: String = CONSUMER_SECRET,
+         baseURL: String = "https://api.discogs.com",
+         urlSession: DataFetching = URLSession.shared) {
+        self.consumerKey = consumerKey
+        self.consumerSecret = consumerSecret
+        self.baseURL = baseURL
+        self.urlSession = urlSession
+    }
 
     nonisolated func getAuthorizationURL(token: String) -> URL? {
         URL(string: "https://discogs.com/oauth/authorize?oauth_token=\(token)")
     }
 
-    /// Fetches the access token if `requestToken`, `tokenSecret` and
-    /// `verifier` are present, otherwise fetches request token.
+    /// Fetches the access token from Discogs if `requestToken`, `tokenSecret`
+    /// and `verifier` are present, otherwise fetches request token.
     func getToken(requestToken: String? = nil,
                   requestTokenSecret: String? = nil,
                   verifier: String? = nil) async throws -> (token: String,
@@ -84,15 +109,13 @@ actor OAuthService: OAuthAPI {
 
         // create request
         var request = URLRequest(url: URL(string: url)!)
-        if isFetchingAccessToken {
-            request.httpMethod = "POST"
-        }
+        request.httpMethod = (isFetchingAccessToken ? "POST" : "GET")
         request.setValue("OAuth \(authHeader)", forHTTPHeaderField: "Authorization")
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         request.setValue("uchronicspin", forHTTPHeaderField: "User-Agent")
 
         // submit request
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await urlSession.data(for: request)
 
         // parse response
         let response = String(data: data, encoding: .utf8)
@@ -106,6 +129,8 @@ actor OAuthService: OAuthAPI {
             }
         }
 
+        // splits URL-encoded response string such as "key1=val1&key2=val2"
+        // into a dictionary
         let params = Dictionary(
             uniqueKeysWithValues: response
                 .components(separatedBy: "&")
