@@ -14,6 +14,7 @@ protocol AuthInteracting: Sendable {
     func setUpStateFetchingAccessToken(from: URL) async
     func loadExistingAuth() async
     func signOut() async
+    func resetIsAuthenticatingIfNeeded(forScenePhase phase: ScenePhase) async
 }
 
 @MainActor
@@ -125,6 +126,13 @@ final class AuthInteractor: AuthInteracting {
             accessToken = nil
             accessTokenSecret = nil
             state.isAuthenticated = false
+        }
+    }
+
+    func resetIsAuthenticatingIfNeeded(forScenePhase phase: ScenePhase) async {
+        // if there was an error, this is already taken care
+        if state.hasError == false && phase == .active {
+            state.isAuthenticating = false
         }
     }
 }

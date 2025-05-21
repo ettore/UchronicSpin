@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct AuthView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var state: AuthState
     private let interactor: AuthInteracting
     private let presenter: AuthPresenting
@@ -45,6 +46,13 @@ struct AuthView: View {
                            Text(error.localizedDescription)
                        }
                    }
+        }
+        // re-enable sign in button if not authenticated
+        .onChange(of: scenePhase) { newPhase in
+            Task {
+                await interactor
+                    .resetIsAuthenticatingIfNeeded(forScenePhase: newPhase)
+            }
         }
     }
 }
