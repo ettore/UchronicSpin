@@ -26,17 +26,12 @@ struct UchronicSpinApp: App {
     var body: some Scene {
         WindowGroup {
             if authState.isAuthenticated {
-                Color.green
-                    .ignoresSafeArea()
-                    .overlay(
-                        Button("Sign Out") {
-                            Task {
-                                await authInteractor.signOut()
-                            }
+                MainView()
+                    .onSignOut {
+                        Task {
+                            await authInteractor.signOut()
                         }
-                            .buttonStyle(.borderedProminent)
-                            .tint(.red)
-                    )
+                    }
             } else {
                 AuthView(state: authState, interactor: authInteractor)
                     .onOpenURL { url in
