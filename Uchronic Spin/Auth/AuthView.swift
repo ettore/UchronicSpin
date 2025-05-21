@@ -37,10 +37,8 @@ struct AuthView: View {
             }
             .padding()
             .alert("Authentication Error",
-                   isPresented: Binding(
-                    get: { state.authError != nil },
-                    set: { if !$0 { state.authError = nil } }
-                   )) {
+                   isPresented: $state.hasError
+            ) {
                        Button("OK", role: .cancel) {}
                    } message: {
                        if let error = state.authError {

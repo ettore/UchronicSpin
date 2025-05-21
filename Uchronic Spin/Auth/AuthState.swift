@@ -6,12 +6,22 @@
 
 import Foundation
 
+
+/// State that can affect the authentication UI.
 @MainActor
 final class AuthState: ObservableObject {
     @Published var isAuthenticating = false
     @Published var authError: AuthError?
     @Published var isAuthenticated = false
 
-    var accessToken: String?
-    var accessTokenSecret: String?
+    var hasError: Bool {
+        get {
+            authError != nil
+        }
+        set {
+            if !newValue {
+                authError = nil
+            }
+        }
+    }
 }

@@ -56,8 +56,8 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
 
         // Then
         XCTAssertTrue(state.isAuthenticated)
-        XCTAssertEqual(state.accessToken, token)
-        XCTAssertEqual(state.accessTokenSecret, secret)
+        XCTAssertEqual(sut.accessToken_testAccessor, token)
+        XCTAssertEqual(sut.accessTokenSecret_testAccessor, secret)
         XCTAssertEqual(mockKeychainManager.loadCredentialsCallCount, 1)
     }
 
@@ -67,8 +67,8 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
 
         // Then
         XCTAssertFalse(state.isAuthenticated)
-        XCTAssertNil(state.accessToken)
-        XCTAssertNil(state.accessTokenSecret)
+        XCTAssertNil(sut.accessToken_testAccessor)
+        XCTAssertNil(sut.accessTokenSecret_testAccessor)
         XCTAssertEqual(mockKeychainManager.loadCredentialsCallCount, 1)
     }
 
@@ -81,8 +81,8 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
 
         // Then
         XCTAssertFalse(state.isAuthenticated)
-        XCTAssertNil(state.accessToken)
-        XCTAssertNil(state.accessTokenSecret)
+        XCTAssertNil(sut.accessToken_testAccessor)
+        XCTAssertNil(sut.accessTokenSecret_testAccessor)
         XCTAssertEqual(mockKeychainManager.loadCredentialsCallCount, 1)
     }
 
@@ -128,8 +128,8 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         // Then
         XCTAssertFalse(state.isAuthenticating)
         XCTAssertTrue(state.isAuthenticated)
-        XCTAssertEqual(state.accessToken, expectedToken)
-        XCTAssertEqual(state.accessTokenSecret, expectedSecret)
+        XCTAssertEqual(sut.accessToken_testAccessor, expectedToken)
+        XCTAssertEqual(sut.accessTokenSecret_testAccessor, expectedSecret)
         XCTAssertNil(state.authError)
         XCTAssertEqual(mockOAuthService.getAccessTokenCallCount, 1)
         XCTAssertEqual(mockKeychainManager.saveCredentialsCallCount, 1)
@@ -146,8 +146,8 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         // Then
         XCTAssertFalse(state.isAuthenticating)
         XCTAssertFalse(state.isAuthenticated)
-        XCTAssertNil(state.accessToken)
-        XCTAssertNil(state.accessTokenSecret)
+        XCTAssertNil(sut.accessToken_testAccessor)
+        XCTAssertNil(sut.accessTokenSecret_testAccessor)
         XCTAssertEqual(mockOAuthService.getAccessTokenCallCount, 0)
         XCTAssertEqual(mockKeychainManager.saveCredentialsCallCount, 0)
         guard case .invalidRequestToken = state.authError else {
@@ -166,8 +166,8 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         // Then
         XCTAssertFalse(state.isAuthenticating)
         XCTAssertFalse(state.isAuthenticated)
-        XCTAssertNil(state.accessToken)
-        XCTAssertNil(state.accessTokenSecret)
+        XCTAssertNil(sut.accessToken_testAccessor)
+        XCTAssertNil(sut.accessTokenSecret_testAccessor)
         XCTAssertEqual(mockOAuthService.getAccessTokenCallCount, 0)
         XCTAssertEqual(mockKeychainManager.saveCredentialsCallCount, 0)
         guard case .missingRequestToken = state.authError else {
@@ -188,8 +188,8 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         // Then
         XCTAssertFalse(state.isAuthenticating)
         XCTAssertFalse(state.isAuthenticated)
-        XCTAssertNil(state.accessToken)
-        XCTAssertNil(state.accessTokenSecret)
+        XCTAssertNil(sut.accessToken_testAccessor)
+        XCTAssertNil(sut.accessTokenSecret_testAccessor)
         XCTAssertEqual(mockOAuthService.getAccessTokenCallCount, 1)
         XCTAssertEqual(mockKeychainManager.saveCredentialsCallCount, 0)
         guard case .invalidAccessToken = state.authError else {
@@ -210,8 +210,8 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         // Then
         XCTAssertFalse(state.isAuthenticating)
         XCTAssertFalse(state.isAuthenticated)
-        XCTAssertNil(state.accessToken)
-        XCTAssertNil(state.accessTokenSecret)
+        XCTAssertNil(sut.accessToken_testAccessor)
+        XCTAssertNil(sut.accessTokenSecret_testAccessor)
         XCTAssertNotNil(state.authError)
         XCTAssertEqual(mockOAuthService.getAccessTokenCallCount, 1)
         XCTAssertEqual(mockKeychainManager.saveCredentialsCallCount, 1)
@@ -226,16 +226,16 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
     func testSignOut_Success_ClearsCredentialsAndState() async {
         // Given
         state.isAuthenticated = true
-        state.accessToken = "test_token"
-        state.accessTokenSecret = "test_secret"
+        sut.accessToken_testAccessor = "test_token"
+        sut.accessTokenSecret_testAccessor = "test_secret"
 
         // When
         await sut.signOut()
 
         // Then
         XCTAssertFalse(state.isAuthenticated)
-        XCTAssertNil(state.accessToken)
-        XCTAssertNil(state.accessTokenSecret)
+        XCTAssertNil(sut.accessToken_testAccessor)
+        XCTAssertNil(sut.accessTokenSecret_testAccessor)
         XCTAssertEqual(mockKeychainManager.clearCredentialsCallCount, 1)
     }
 
@@ -243,16 +243,16 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         // Given
         mockKeychainManager.shouldThrowOnClear = true
         state.isAuthenticated = true
-        state.accessToken = "test_token"
-        state.accessTokenSecret = "test_secret"
+        sut.accessToken_testAccessor = "test_token"
+        sut.accessTokenSecret_testAccessor = "test_secret"
 
         // When
         await sut.signOut()
 
         // Then
         XCTAssertFalse(state.isAuthenticated)
-        XCTAssertNil(state.accessToken)
-        XCTAssertNil(state.accessTokenSecret)
+        XCTAssertNil(sut.accessToken_testAccessor)
+        XCTAssertNil(sut.accessTokenSecret_testAccessor)
         XCTAssertEqual(mockKeychainManager.clearCredentialsCallCount, 1)
     }
 }

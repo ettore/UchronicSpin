@@ -23,6 +23,8 @@ final class AuthInteractor: AuthInteracting {
     private let keychainManager: AuthKeychainManaging
     private var requestToken: String?
     private var requestTokenSecret: String?
+    private var accessToken: String?
+    private var accessTokenSecret: String?
 
     init(state: AuthState,
          service: OAuthAPI = OAuthService(),
@@ -35,8 +37,8 @@ final class AuthInteractor: AuthInteracting {
     func loadExistingAuth() async {
         do {
             if let credentials = try await keychainManager.loadCredentials() {
-                state.accessToken = credentials.token
-                state.accessTokenSecret = credentials.secret
+                accessToken = credentials.token
+                accessTokenSecret = credentials.secret
                 state.isAuthenticated = true
             }
         } catch {
@@ -97,8 +99,8 @@ final class AuthInteractor: AuthInteracting {
             try await keychainManager.saveCredentials(token: token,
                                                       secret: secret)
             // Update state
-            state.accessToken = token
-            state.accessTokenSecret = secret
+            accessToken = token
+            accessTokenSecret = secret
             state.isAuthenticated = true
         } catch {
             if let authError = error as? AuthError {
@@ -114,15 +116,36 @@ final class AuthInteractor: AuthInteracting {
     func signOut() async {
         do {
             try await keychainManager.clearCredentials()
-            state.accessToken = nil
-            state.accessTokenSecret = nil
+            accessToken = nil
+            accessTokenSecret = nil
             state.isAuthenticated = false
         } catch {
             print("Error clearing credentials: \(error)")
             // Continue with sign out even if keychain delete fails
-            state.accessToken = nil
-            state.accessTokenSecret = nil
+            accessToken = nil
+            accessTokenSecret = nil
             state.isAuthenticated = false
         }
     }
 }
+
+#if DEBUG
+extension AuthInteractor {
+    var accessToken_testAccessor: String? {
+        get {
+            return self.accessToken
+        }
+        set {
+            self.accessToken = newValue
+        }
+    }
+    var accessTokenSecret_testAccessor: String? {
+        get {
+            return self.accessTokenSecret
+        }
+        set {
+            self.accessTokenSecret = newValue
+        }
+    }
+}
+#endif
