@@ -1,5 +1,5 @@
 //
-//  AuthKeychainManaging.swift
+//  CredentialStore.swift
 //  Uchronic Spin
 //  Created by Ettore Pasquini on 5/14/25.
 //
@@ -7,13 +7,13 @@
 
 import Foundation
 
-protocol AuthKeychainManaging: Sendable {
+protocol CredentialStoring: Sendable {
     func saveCredentials(token: String, secret: String) async throws
     func loadCredentials() async throws -> (token: String, secret: String)?
     func clearCredentials() async throws
 }
 
-actor AuthKeychainManager: AuthKeychainManaging {
+actor CredentialStore: CredentialStoring {
     private let keychainService: KeychainServicing
     private let tokenKey = "auth.accessToken"
     private let secretKey = "auth.accessTokenSecret"

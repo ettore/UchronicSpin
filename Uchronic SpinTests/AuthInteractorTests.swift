@@ -16,7 +16,7 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
     private var sut: AuthInteractor!
     private var state: AuthState!
     private var mockOAuthService: MockOAuthService!
-    private var mockKeychainManager: MockAuthKeychainManager!
+    private var mockCredentialStore: MockCredentialStore!
 
     // MARK: - Setup/Teardown
 
@@ -25,12 +25,12 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
 
         state = AuthState()
         mockOAuthService = MockOAuthService()
-        mockKeychainManager = MockAuthKeychainManager()
+        mockCredentialStore = MockCredentialStore()
 
         sut = AuthInteractor(
             state: state,
             service: mockOAuthService,
-            keychainManager: mockKeychainManager
+            credentialStore: mockCredentialStore
         )
     }
 
@@ -38,7 +38,7 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         sut = nil
         state = nil
         mockOAuthService = nil
-        mockKeychainManager = nil
+        mockCredentialStore = nil
 
         try await super.tearDown()
     }
@@ -49,7 +49,7 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         // Given
         let token = "test_token"
         let secret = "test_secret"
-        mockKeychainManager.credentials = (token: token, secret: secret)
+        mockCredentialStore.credentials = (token: token, secret: secret)
 
         // When
         await sut.loadExistingAuth()
@@ -58,7 +58,7 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         XCTAssertTrue(state.isAuthenticated)
         XCTAssertEqual(sut.accessToken_testAccessor, token)
         XCTAssertEqual(sut.accessTokenSecret_testAccessor, secret)
-        XCTAssertEqual(mockKeychainManager.loadCredentialsCallCount, 1)
+        XCTAssertEqual(mockCredentialStore.loadCredentialsCallCount, 1)
     }
 
     func testLoadExistingAuth_WithNoCredentials_UserRemainsUnauthenticated() async {
@@ -69,12 +69,12 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         XCTAssertFalse(state.isAuthenticated)
         XCTAssertNil(sut.accessToken_testAccessor)
         XCTAssertNil(sut.accessTokenSecret_testAccessor)
-        XCTAssertEqual(mockKeychainManager.loadCredentialsCallCount, 1)
+        XCTAssertEqual(mockCredentialStore.loadCredentialsCallCount, 1)
     }
 
     func testLoadExistingAuth_WhenKeychainThrowsError_UserRemainsUnauthenticated() async {
         // Given
-        mockKeychainManager.shouldThrowOnLoad = true
+        mockCredentialStore.shouldThrowOnLoad = true
 
         // When
         await sut.loadExistingAuth()
@@ -83,7 +83,7 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         XCTAssertFalse(state.isAuthenticated)
         XCTAssertNil(sut.accessToken_testAccessor)
         XCTAssertNil(sut.accessTokenSecret_testAccessor)
-        XCTAssertEqual(mockKeychainManager.loadCredentialsCallCount, 1)
+        XCTAssertEqual(mockCredentialStore.loadCredentialsCallCount, 1)
     }
 
     // MARK: - Test startAuth
@@ -132,7 +132,7 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         XCTAssertEqual(sut.accessTokenSecret_testAccessor, expectedSecret)
         XCTAssertNil(state.authError)
         XCTAssertEqual(mockOAuthService.getAccessTokenCallCount, 1)
-        XCTAssertEqual(mockKeychainManager.saveCredentialsCallCount, 1)
+        XCTAssertEqual(mockCredentialStore.saveCredentialsCallCount, 1)
     }
 
     func testSetUpStateFetchingAccessToken_WithMissingVerifier_SetsAuthError() async {
@@ -149,7 +149,7 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         XCTAssertNil(sut.accessToken_testAccessor)
         XCTAssertNil(sut.accessTokenSecret_testAccessor)
         XCTAssertEqual(mockOAuthService.getAccessTokenCallCount, 0)
-        XCTAssertEqual(mockKeychainManager.saveCredentialsCallCount, 0)
+        XCTAssertEqual(mockCredentialStore.saveCredentialsCallCount, 0)
         guard case .invalidRequestToken = state.authError else {
             XCTFail("AuthError should be invalidRequestToken")
             return
@@ -169,7 +169,7 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         XCTAssertNil(sut.accessToken_testAccessor)
         XCTAssertNil(sut.accessTokenSecret_testAccessor)
         XCTAssertEqual(mockOAuthService.getAccessTokenCallCount, 0)
-        XCTAssertEqual(mockKeychainManager.saveCredentialsCallCount, 0)
+        XCTAssertEqual(mockCredentialStore.saveCredentialsCallCount, 0)
         guard case .missingRequestToken = state.authError else {
             XCTFail("AuthError should be .missingRequestToken")
             return
@@ -191,7 +191,7 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         XCTAssertNil(sut.accessToken_testAccessor)
         XCTAssertNil(sut.accessTokenSecret_testAccessor)
         XCTAssertEqual(mockOAuthService.getAccessTokenCallCount, 1)
-        XCTAssertEqual(mockKeychainManager.saveCredentialsCallCount, 0)
+        XCTAssertEqual(mockCredentialStore.saveCredentialsCallCount, 0)
         guard case .invalidAccessToken = state.authError else {
             XCTFail("AuthError should be .invalidAccessToken")
             return
@@ -200,7 +200,7 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
 
     func testSetUpStateFetchingAccessToken_WhenKeychainThrowsError_SetsAuthError() async {
         // Given
-        mockKeychainManager.shouldThrowOnSave = true
+        mockCredentialStore.shouldThrowOnSave = true
         await sut.startAuth()
 
         // When
@@ -214,7 +214,7 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         XCTAssertNil(sut.accessTokenSecret_testAccessor)
         XCTAssertNotNil(state.authError)
         XCTAssertEqual(mockOAuthService.getAccessTokenCallCount, 1)
-        XCTAssertEqual(mockKeychainManager.saveCredentialsCallCount, 1)
+        XCTAssertEqual(mockCredentialStore.saveCredentialsCallCount, 1)
         guard case .keychainError(_) = state.authError else {
             XCTFail("AuthError should be .keychainError(<error>)")
             return
@@ -236,12 +236,12 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         XCTAssertFalse(state.isAuthenticated)
         XCTAssertNil(sut.accessToken_testAccessor)
         XCTAssertNil(sut.accessTokenSecret_testAccessor)
-        XCTAssertEqual(mockKeychainManager.clearCredentialsCallCount, 1)
+        XCTAssertEqual(mockCredentialStore.clearCredentialsCallCount, 1)
     }
 
     func testSignOut_WhenKeychainThrowsError_StillClearsState() async {
         // Given
-        mockKeychainManager.shouldThrowOnClear = true
+        mockCredentialStore.shouldThrowOnClear = true
         state.isAuthenticated = true
         sut.accessToken_testAccessor = "test_token"
         sut.accessTokenSecret_testAccessor = "test_secret"
@@ -253,6 +253,6 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         XCTAssertFalse(state.isAuthenticated)
         XCTAssertNil(sut.accessToken_testAccessor)
         XCTAssertNil(sut.accessTokenSecret_testAccessor)
-        XCTAssertEqual(mockKeychainManager.clearCredentialsCallCount, 1)
+        XCTAssertEqual(mockCredentialStore.clearCredentialsCallCount, 1)
     }
 }

@@ -1,5 +1,5 @@
 //
-//  MockAuthKeychainManager.swift
+//  MockCredentialStore.swift
 //  Uchronic SpinTests
 //
 //  Created on 5/14/25.
@@ -8,7 +8,7 @@
 import Foundation
 @testable import Uchronic_Spin
 
-class MockAuthKeychainManager: AuthKeychainManaging, @unchecked Sendable {
+class MockCredentialStore: CredentialStoring, @unchecked Sendable {
     var credentials: (token: String, secret: String)?
     var saveCredentialsCallCount = 0
     var loadCredentialsCallCount = 0

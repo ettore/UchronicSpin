@@ -21,7 +21,7 @@ protocol AuthInteracting: Sendable {
 final class AuthInteractor: AuthInteracting {
     private let state: AuthState
     private let service: OAuthAPI
-    private let keychainManager: AuthKeychainManaging
+    private let credentialStore: CredentialStoring
     private var requestToken: String?
     private var requestTokenSecret: String?
     private var accessToken: String?
@@ -29,15 +29,15 @@ final class AuthInteractor: AuthInteracting {
 
     init(state: AuthState,
          service: OAuthAPI = OAuthService(),
-         keychainManager: AuthKeychainManaging = AuthKeychainManager()) {
+         credentialStore: CredentialStoring = CredentialStore()) {
         self.state = state
         self.service = service
-        self.keychainManager = keychainManager
+        self.credentialStore = credentialStore
     }
 
     func loadExistingAuth() async {
         do {
-            if let credentials = try await keychainManager.loadCredentials() {
+            if let credentials = try await credentialStore.loadCredentials() {
                 accessToken = credentials.token
                 accessTokenSecret = credentials.secret
                 state.isAuthenticated = true
@@ -97,7 +97,7 @@ final class AuthInteractor: AuthInteracting {
             )
 
             // Save credentials to keychain
-            try await keychainManager.saveCredentials(token: token,
+            try await credentialStore.saveCredentials(token: token,
                                                       secret: secret)
             // Update state
             accessToken = token
@@ -116,7 +116,7 @@ final class AuthInteractor: AuthInteracting {
 
     func signOut() async {
         do {
-            try await keychainManager.clearCredentials()
+            try await credentialStore.clearCredentials()
             accessToken = nil
             accessTokenSecret = nil
             state.isAuthenticated = false

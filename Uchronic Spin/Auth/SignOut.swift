@@ -23,7 +23,7 @@ extension View {
     }
 }
 
-struct SignOutModifier: ViewModifier {
+private struct SignOutModifier: ViewModifier {
     let action: () -> Void
 
     func body(content: Content) -> some View {
