@@ -11,11 +11,13 @@ import SwiftUI
 struct UchronicSpinApp: App {
     @StateObject private var authState: AuthState
     private let authInteractor: AuthInteractor
+    private let apiService: APIService
 
     init() {
         let state = AuthState()
         self._authState = StateObject(wrappedValue: state)
-        self.authInteractor = AuthInteractor(state: state)
+        self.apiService = APIService()
+        self.authInteractor = AuthInteractor(state: state, apiService: apiService)
 
         // Check for existing credentials at launch
         Task { [self] in
@@ -26,7 +28,7 @@ struct UchronicSpinApp: App {
     var body: some Scene {
         WindowGroup {
             if authState.isAuthenticated {
-                MainView()
+                MainView(apiService: apiService)
                     .onSignOut {
                         Task {
                             await authInteractor.signOut()

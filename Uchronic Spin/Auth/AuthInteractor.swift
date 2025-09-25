@@ -24,22 +24,20 @@ final class AuthInteractor: AuthInteracting {
     private let credentialStore: CredentialStoring
     private var requestToken: String?
     private var requestTokenSecret: String?
-    private var accessToken: String?
-    private var accessTokenSecret: String?
 
     init(state: AuthState,
-         service: OAuthAPI = OAuthService(),
+         apiService: OAuthAPI = APIService(),
          credentialStore: CredentialStoring = CredentialStore()) {
         self.state = state
-        self.service = service
+        self.service = apiService
         self.credentialStore = credentialStore
     }
 
     func loadExistingAuth() async {
         do {
             if let credentials = try await credentialStore.loadCredentials() {
-                accessToken = credentials.token
-                accessTokenSecret = credentials.secret
+                await service.setAccessCredentials(token: credentials.token,
+                                                   secret: credentials.secret)
                 state.isAuthenticated = true
             }
         } catch {
@@ -84,7 +82,7 @@ final class AuthInteractor: AuthInteracting {
         })?.value
 
         guard let verifier = verifier else {
-            // if we can't find the verifier, we probably had a bad request token
+            // if can't find the verifier, we probably had a bad request token
             state.authError = .invalidRequestToken
             return
         }
@@ -100,8 +98,7 @@ final class AuthInteractor: AuthInteracting {
             try await credentialStore.saveCredentials(token: token,
                                                       secret: secret)
             // Update state
-            accessToken = token
-            accessTokenSecret = secret
+            await service.setAccessCredentials(token: token, secret: secret)
             state.isAuthenticated = true
         } catch {
             if let authError = error as? AuthError {
@@ -117,14 +114,12 @@ final class AuthInteractor: AuthInteracting {
     func signOut() async {
         do {
             try await credentialStore.clearCredentials()
-            accessToken = nil
-            accessTokenSecret = nil
+            await service.setAccessCredentials(token: nil, secret: nil)
             state.isAuthenticated = false
         } catch {
             print("Error clearing credentials: \(error)")
             // Continue with sign out even if keychain delete fails
-            accessToken = nil
-            accessTokenSecret = nil
+            await service.setAccessCredentials(token: nil, secret: nil)
             state.isAuthenticated = false
         }
     }
@@ -136,24 +131,3 @@ final class AuthInteractor: AuthInteracting {
         }
     }
 }
-
-#if DEBUG
-extension AuthInteractor {
-    var accessToken_testAccessor: String? {
-        get {
-            return self.accessToken
-        }
-        set {
-            self.accessToken = newValue
-        }
-    }
-    var accessTokenSecret_testAccessor: String? {
-        get {
-            return self.accessTokenSecret
-        }
-        set {
-            self.accessTokenSecret = newValue
-        }
-    }
-}
-#endif

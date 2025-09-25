@@ -8,6 +8,9 @@ import Foundation
 
 
 /// State that can affect the authentication UI.
+///
+/// This is not meant to capture the long-term authentication state of the
+/// app, such as the current credentials.
 @MainActor
 final class AuthState: ObservableObject {
     @Published var isAuthenticating = false
@@ -18,6 +21,8 @@ final class AuthState: ObservableObject {
         get {
             authError != nil
         }
+
+        // need a setter to use `hasError` as a binding in SwiftUI
         set {
             if !newValue {
                 authError = nil

@@ -28,8 +28,8 @@ final class OAuthServiceTests: XCTestCase {
 
     // MARK: - Helper Methods
 
-    private func createSUT(mockSession: MockURLSession) -> OAuthService {
-        OAuthService(
+    private func createSUT(mockSession: MockURLSession) -> APIService {
+        APIService(
             consumerKey: testConsumerKey,
             consumerSecret: testConsumerSecret,
             baseURL: testBaseURL,
@@ -88,7 +88,7 @@ final class OAuthServiceTests: XCTestCase {
 
         // Verify other headers
         XCTAssertEqual(capturedRequest?.value(forHTTPHeaderField: "Content-Type"), "application/x-www-form-urlencoded")
-        XCTAssertEqual(capturedRequest?.value(forHTTPHeaderField: "User-Agent"), "uchronicspin")
+        XCTAssertEqual(capturedRequest?.value(forHTTPHeaderField: "User-Agent"), USER_AGENT)
     }
 
     func testGetRequestToken_InvalidResponse() async {

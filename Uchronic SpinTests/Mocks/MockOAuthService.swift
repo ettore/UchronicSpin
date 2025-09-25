@@ -16,6 +16,10 @@ class MockOAuthService: OAuthAPI, @unchecked Sendable {
     var shouldThrowOnAccessToken = false
     var getRequestTokenCallCount = 0
     var getAccessTokenCallCount = 0
+    var setNonNilAccessCredentialsCallCount = 0
+    var resetAccessCredentialsCallCount = 0
+    var accessToken: String?
+    var accessTokenSecret: String?
 
     func getToken(requestToken: String?,
                   requestTokenSecret: String?,
@@ -57,6 +61,16 @@ class MockOAuthService: OAuthAPI, @unchecked Sendable {
 
     nonisolated func getAuthorizationURL(token: String) -> URL? {
         return URL(string: "https://example.com/oauth/authorize?oauth_token=\(token)")
+    }
+
+    func setAccessCredentials(token: String?, secret: String?) async {
+        if token != nil {
+            setNonNilAccessCredentialsCallCount += 1
+        } else {
+            resetAccessCredentialsCallCount += 1
+        }
+        accessToken = token
+        accessTokenSecret = secret
     }
 
     func reset() {
