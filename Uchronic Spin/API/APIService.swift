@@ -9,6 +9,13 @@ import Foundation
 import CryptoKit
 
 
+/// The whole she-bang.
+protocol API: OAuthAPI, CollectionAPI {}
+
+
+// MARK: -
+
+
 protocol DataFetching: Sendable {
     func data(for request: URLRequest) async throws -> (Data, URLResponse)
 }
@@ -295,3 +302,5 @@ actor APIService: OAuthAPI {
         return request
     }
 }
+
+extension APIService: API {}

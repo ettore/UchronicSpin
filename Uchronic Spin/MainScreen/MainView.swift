@@ -10,17 +10,40 @@ import SwiftUI
 
 
 struct MainView: View {
+    private let apiService: API
+    let buildInteractor: BuildCollectionInteractor
+
+    init(apiService: API) {
+        self.apiService = apiService
+        buildInteractor = BuildCollectionInteractor(apiService: apiService)
+    }
+
     var body: some View {
         Color.green
             .ignoresSafeArea()
             .overlay(
-                Button("Sign Out") {
-                    Task {
-                        uchronicSignOut()
+                VStack {
+                    Button("Fetch Collection") {
+                        Task {
+                            let num = await buildInteractor.fetchNumberOfItems()
+                            print("Number of items: \(num)")
+                        }
                     }
-                }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.blue)
+
+                    Button("Sign Out") {
+                        Task {
+                            uchronicSignOut()
+                        }
+                    }
                     .buttonStyle(.borderedProminent)
                     .tint(.red)
+                }
             )
     }
+}
+
+#Preview {
+    MainView(apiService: APIService())
 }
