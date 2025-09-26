@@ -245,6 +245,11 @@ actor APIService: OAuthAPI {
         return Data(signature).base64EncodedString()
     }
 
+    private func generateOAuthSignature() -> String {
+        // PLAINTEXT signature method: consumer_secret&token_secret
+        "\(consumerSecret.rfc3986PercentEncoded)&\((accessTokenSecret ?? "").rfc3986PercentEncoded)"
+    }
+
     func createOAuthHeader(
         method: String,
         endpoint: String
