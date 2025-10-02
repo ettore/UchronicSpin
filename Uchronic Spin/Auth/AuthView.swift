@@ -48,7 +48,7 @@ struct AuthView: View {
                    }
         }
         // re-enable sign in button if not authenticated
-        .onChange(of: scenePhase) { newPhase in
+        .onChange(of: scenePhase) { oldPhase, newPhase in
             Task {
                 await interactor
                     .resetIsAuthenticatingIfNeeded(forScenePhase: newPhase)

@@ -5,42 +5,30 @@
 //  Created by Ettore Pasquini on 5/20/25.
 //
 
-
 import SwiftUI
 
 
 struct MainView: View {
     private let apiService: API
-    let buildInteractor: BuildCollectionInteractor
+    @Environment(\.modelContext) var modelContext
 
     init(apiService: API) {
         self.apiService = apiService
-        buildInteractor = BuildCollectionInteractor(apiService: apiService)
     }
 
     var body: some View {
-        Color.green
-            .ignoresSafeArea()
-            .overlay(
-                VStack {
-                    Button("Fetch Collection") {
-                        Task {
-                            let num = await buildInteractor.fetchNumberOfItems()
-                            print("Number of items: \(num)")
-                        }
+        NavigationStack {
+            Color.purple
+                .ignoresSafeArea()
+                .navigationTitle("Uchronic Spin")
+                .toolbar {
+                    NavigationLink("Settings") {
+                        SettingsView(apiService: apiService,
+                                     modelContext: modelContext)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.blue)
-
-                    Button("Sign Out") {
-                        Task {
-                            uchronicSignOut()
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.red)
+                    .tint(.white)
                 }
-            )
+        }
     }
 }
 

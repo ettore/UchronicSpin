@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct UchronicSpinApp: App {
@@ -43,5 +44,6 @@ struct UchronicSpinApp: App {
                     }
             }
         }
+        .modelContainer(for: User.self)
     }
 }

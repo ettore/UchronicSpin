@@ -7,12 +7,14 @@
 
 import Foundation
 
+
 protocol CollectionAPI: Sendable {
-    func getNumberOfItems() async throws -> Int
+    func getNumberOfItems() async throws -> (username: String, numberOfItems: Int)
 }
 
+
 extension APIService: CollectionAPI {
-    func getNumberOfItems() async throws -> Int {
+    func getNumberOfItems() async throws -> (username: String, numberOfItems: Int) {
         guard accessToken != nil, accessTokenSecret != nil else {
             throw AuthError.missingAccessToken
         }
@@ -37,7 +39,8 @@ extension APIService: CollectionAPI {
         do {
             let decoder = JSONDecoder()
             let folder = try decoder.decode(CollectionFolder.self, from: data)
-            return folder.count
+
+            return (username: username, numberOfItems: folder.count)
         } catch {
             throw APIError.decodingError(error)
         }
