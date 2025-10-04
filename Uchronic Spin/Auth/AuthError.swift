@@ -16,6 +16,7 @@ enum AuthError: LocalizedError {
     case keychainError(KeychainError)
     case networkError(Error)
     case invalidUsername(Int, String?)
+    case persistentStorageError(Error)
 
     var errorDescription: String? {
         switch self {
@@ -35,6 +36,8 @@ enum AuthError: LocalizedError {
             return "Keychain error: \(keychainError.localizedDescription)"
         case .invalidUsername(let statusCode, let msg):
             return "Failed to fetch username [HTTP: \(statusCode) \(msg ?? "")"
+        case .persistentStorageError(let error):
+            return "Persistent storage error: \(error.localizedDescription)"
         }
     }
 }

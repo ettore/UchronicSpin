@@ -14,7 +14,6 @@ struct SettingsView: View {
     let buildInteractor: BuildCollectionInteractor
     let presenter: SettingsPresenter
     @ObservedObject var state: SettingsState
-//    private let modelContext: ModelContext
 
     // this loads the username when the view is show on the screen
     // and watches the SwiftData db for changes
@@ -29,9 +28,6 @@ struct SettingsView: View {
                                                          modelContext: modelContext)
         self.presenter = SettingsPresenter(state: buildInteractor.state)
         self.state = buildInteractor.state
-        //self.modelContext = modelContext
-
-        print("SwiftUI Model Context: \(pointer(modelContext))")
     }
 
     var body: some View {
@@ -44,7 +40,6 @@ struct SettingsView: View {
                 Button("Re-Fetch Collection") {
                     Task {
                         await buildInteractor.fetchUserMetadata()
-                        print("Number of items: \(presenter.numberOfItemsInCollection)")
                     }
                 }
 

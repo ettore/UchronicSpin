@@ -64,6 +64,9 @@ final class AuthInteractor: AuthInteracting {
         }
     }
 
+    /// Loads access token and secret and saves them into keychain.
+    ///
+    /// Also sets `isAuthenticated` flag into `AuthState`.
     func setUpStateFetchingAccessToken(from url: URL) async {
         defer {
             state.isAuthenticating = false

@@ -5,6 +5,7 @@
 //
 
 import Foundation
+import SwiftData
 
 
 /// State that can affect the authentication UI.
@@ -16,6 +17,8 @@ final class AuthState: ObservableObject {
     @Published var isAuthenticating = false
     @Published var authError: AuthError?
     @Published var isAuthenticated = false
+
+    var modelContext: ModelContext?
 
     var hasError: Bool {
         get {

@@ -9,8 +9,8 @@ import SwiftUI
 
 
 struct MainView: View {
-    private let apiService: API
     @Environment(\.modelContext) var modelContext
+    private let apiService: API
 
     init(apiService: API) {
         self.apiService = apiService

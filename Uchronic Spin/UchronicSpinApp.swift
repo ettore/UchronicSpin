@@ -10,6 +10,7 @@ import SwiftData
 
 @main
 struct UchronicSpinApp: App {
+    @Environment(\.modelContext) var modelContext
     @StateObject private var authState: AuthState
     private let authInteractor: AuthInteractor
     private let apiService: APIService
@@ -28,6 +29,16 @@ struct UchronicSpinApp: App {
 
     var body: some Scene {
         WindowGroup {
+            rootView
+                .task {
+                    print("App modelContext: \(pointer(modelContext))")
+                    authState.modelContext = modelContext
+                }
+        }
+    }
+
+    private var rootView: some View {
+        Group {
             if authState.isAuthenticated {
                 MainView(apiService: apiService)
                     .onSignOut {

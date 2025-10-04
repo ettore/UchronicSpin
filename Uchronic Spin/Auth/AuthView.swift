@@ -27,14 +27,14 @@ struct AuthView: View {
                 Text(presenter.welcomeMessage)
                     .font(.title)
                     .fontWeight(.bold)
-                
+
                 Button(presenter.authButtonTitle) {
                     Task {
                         await interactor.startAuth()
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(state.isAuthenticating)
+                .disabled(state.isAuthenticating) //TODO: don't show at all
             }
             .padding()
             .alert("Authentication Error",
