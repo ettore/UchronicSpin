@@ -10,13 +10,14 @@ import SwiftData
 
 @main
 struct UchronicSpinApp: App {
-    @Environment(\.modelContext) var modelContext
     @StateObject private var authState: AuthState
     private let authInteractor: AuthInteractor
     private let apiService: APIService
+    private let modelContainer: ModelContainer
 
     init() {
-        let state = AuthState()
+        modelContainer = try! ModelContainer(for: User.self)
+        let state = AuthState(modelContext: modelContainer.mainContext)
         self._authState = StateObject(wrappedValue: state)
         self.apiService = APIService()
         self.authInteractor = AuthInteractor(state: state, apiService: apiService)
@@ -31,10 +32,10 @@ struct UchronicSpinApp: App {
         WindowGroup {
             rootView
                 .task {
-                    print("App modelContext: \(pointer(modelContext))")
-                    authState.modelContext = modelContext
+                    print("rootView modelContext: \(pointer(modelContainer.mainContext))")
                 }
         }
+        .modelContainer(modelContainer)
     }
 
     private var rootView: some View {
@@ -55,6 +56,5 @@ struct UchronicSpinApp: App {
                     }
             }
         }
-        .modelContainer(for: User.self)
     }
 }

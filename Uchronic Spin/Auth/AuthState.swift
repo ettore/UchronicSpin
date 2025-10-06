@@ -16,9 +16,23 @@ import SwiftData
 final class AuthState: ObservableObject {
     @Published var isAuthenticating = false
     @Published var authError: AuthError?
-    @Published var isAuthenticated = false
+    @Published var isAuthenticated = false {
+        didSet {
+            if !isAuthenticated {
+                do {
+                    try modelContext?.saveUser(nil)
+                } catch {
+                    authError = .persistentStorageError(error)
+                }
+            }
+        }
+    }
 
-    var modelContext: ModelContext?
+    var modelContext: UserModelContext?
+
+    init(modelContext: UserModelContext) {
+        self.modelContext = modelContext
+    }
 
     var hasError: Bool {
         get {

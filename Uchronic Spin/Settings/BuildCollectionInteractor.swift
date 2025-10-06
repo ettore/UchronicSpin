@@ -13,6 +13,7 @@ protocol BuildCollectionInteracting: Sendable {
     var apiService: CollectionAPI {get}
 
     func fetchUserMetadata() async
+    func deleteUserMetadata() async
 }
 
 
@@ -37,5 +38,9 @@ class BuildCollectionInteractor: BuildCollectionInteracting {
             print(error)
             state.error = error
         }
+    }
+
+    func deleteUserMetadata() async {
+        state.deleteUserMetadata()
     }
 }

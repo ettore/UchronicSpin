@@ -8,6 +8,7 @@
 import XCTest
 @testable import Uchronic_Spin
 
+
 @MainActor
 final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
 
@@ -24,7 +25,8 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
     override func setUp() async throws {
         try await super.setUp()
 
-        state = AuthState()
+        let modelContext = MockModelContext()
+        state = AuthState(modelContext: modelContext)
         mockAPIService = MockOAuthService()
         mockCredentialStore = MockCredentialStore()
 

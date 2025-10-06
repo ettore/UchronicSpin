@@ -16,22 +16,21 @@ final class SettingsState: ObservableObject {
     @Published var hasLoadedWholeCollection = false
     @MainActor var modelContext: ModelContext
 
-    /// `ModelQuery` loads the user data automatically when the `SettingsState`
-    /// is created, watches the SwiftData DB for changes and updates the `users`
-    /// array
-    @ModelQuery private var users: [User]
+    // NB! it's fundamental this variable remains @Published for UI to work!
+    @Published private var _user: User?
 
     /// Computed property that reads/saves/deletes user data on persistent
     /// storage via SwiftData. Set to `nil` to delete.
     @MainActor var user: User? {
         get {
-            return users.first
+            return _user
         }
         set {
-            if let user = newValue {
-                modelContext.insert(user)
-            } else if let user = user {
-                modelContext.delete(user)
+            do {
+                try modelContext.saveUser(newValue)
+                _user = newValue
+            } catch {
+                print("Error saving user \(user?.username ?? "nil") to ModelContext: \(error)")
             }
         }
     }
@@ -39,7 +38,12 @@ final class SettingsState: ObservableObject {
     @MainActor
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
-        _users = ModelQuery(context: modelContext)
+        _user = modelContext.fetchUser()
+    }
+
+    @MainActor
+    func deleteUserMetadata() {
+        user = nil
     }
 
     var hasError: Bool {
@@ -47,7 +51,7 @@ final class SettingsState: ObservableObject {
             error != nil
         }
 
-        // need an explicit setter to bind to this comnputed property in SwiftUI
+        // need an explicit setter to bind to this computed property in SwiftUI
         set {
             if !newValue {
                 error = nil

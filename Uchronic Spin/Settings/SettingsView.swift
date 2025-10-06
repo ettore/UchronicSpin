@@ -43,6 +43,12 @@ struct SettingsView: View {
                     }
                 }
 
+                Button("Delete Data") {
+                    Task {
+                        await buildInteractor.deleteUserMetadata()
+                    }
+                }
+
                 Button("Sign Out") {
                     Task {
                         uchronicSignOut()

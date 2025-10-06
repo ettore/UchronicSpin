@@ -6,14 +6,17 @@
 //
 
 import SwiftUI
+import SwiftData
+
 
 struct AuthView: View {
+    @Environment(\.modelContext) var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var state: AuthState
     private let interactor: AuthInteracting
     private let presenter: AuthPresenting
     
-    init(state: AuthState = AuthState(),
+    init(state: AuthState,
          interactor: AuthInteracting? = nil,
          presenter: AuthPresenting? = nil) {
         _state = StateObject(wrappedValue: state)
@@ -58,5 +61,5 @@ struct AuthView: View {
 }
 
 #Preview {
-    AuthView()
+    AuthView(state: AuthState(modelContext: try! ModelContainer(for: User.self).mainContext))
 }
