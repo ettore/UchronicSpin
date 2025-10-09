@@ -3,6 +3,7 @@
 //  Uchronic Spin
 //
 //  Created by Ettore Pasquini on 1/4/25.
+//  Copyright © 2025 Ettore Pasquini. All rights reserved.
 //
 
 import SwiftUI
@@ -46,7 +47,7 @@ struct AuthView: View {
                        Button("OK", role: .cancel) {}
                    } message: {
                        if let error = state.authError {
-                           Text(error.localizedDescription)
+                           Text(error.userFriendlyMessage)
                        }
                    }
         }

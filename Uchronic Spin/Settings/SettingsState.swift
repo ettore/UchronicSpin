@@ -3,6 +3,7 @@
 //  Uchronic Spin
 //
 //  Created by Ettore Pasquini on 10/1/25.
+//  Copyright © 2025 Ettore Pasquini. All rights reserved.
 //
 
 import Foundation
@@ -15,6 +16,7 @@ final class SettingsState: ObservableObject {
     @Published var error: Error?
     @Published var hasLoadedWholeCollection = false
     @MainActor var modelContext: ModelContext
+    private let log: Logging
 
     // NB! it's fundamental this variable remains @Published for UI to work!
     @Published private var _user: User?
@@ -30,15 +32,17 @@ final class SettingsState: ObservableObject {
                 try modelContext.saveUser(newValue)
                 _user = newValue
             } catch {
-                print("Error saving user \(user?.username ?? "nil") to ModelContext: \(error)")
+                log.error("Error saving user \(user?.username ?? "nil") to ModelContext", error)
             }
         }
     }
 
     @MainActor
-    init(modelContext: ModelContext) {
+    init(modelContext: ModelContext,
+         log: Logging = Log.makeSettingsLog()) {
         self.modelContext = modelContext
         _user = modelContext.fetchUser()
+        self.log = log
     }
 
     @MainActor

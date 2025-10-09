@@ -3,6 +3,7 @@
 //  Uchronic Spin
 //
 //  Created by Ettore Pasquini on 1/4/25.
+//  Copyright © 2025 Ettore Pasquini. All rights reserved.
 //
 
 import SwiftUI
@@ -14,8 +15,10 @@ struct UchronicSpinApp: App {
     private let authInteractor: AuthInteractor
     private let apiService: APIService
     private let modelContainer: ModelContainer
+    private let log: Log
 
     init() {
+        self.log = Log.make(for: "Main")
         modelContainer = try! ModelContainer(for: User.self)
         let state = AuthState(modelContext: modelContainer.mainContext)
         self._authState = StateObject(wrappedValue: state)
@@ -32,7 +35,7 @@ struct UchronicSpinApp: App {
         WindowGroup {
             rootView
                 .task {
-                    print("rootView modelContext: \(pointer(modelContainer.mainContext))")
+                    log.debug("rootView modelContext: \(pointer(modelContainer.mainContext))")
                 }
         }
         .modelContainer(modelContainer)

@@ -2,6 +2,7 @@
 //  AuthState.swift
 //  Uchronic Spin
 //  Created by Ettore Pasquini on 1/4/25.
+//  Copyright © 2025 Ettore Pasquini. All rights reserved.
 //
 
 import Foundation
@@ -15,7 +16,10 @@ import SwiftData
 @MainActor
 final class AuthState: ObservableObject {
     @Published var isAuthenticating = false
+
+    /// Any blocking authentication error that should be displayed to the user.
     @Published var authError: AuthError?
+    
     @Published var isAuthenticated = false {
         didSet {
             if !isAuthenticated {

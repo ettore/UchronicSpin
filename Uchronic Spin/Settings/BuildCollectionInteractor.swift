@@ -22,10 +22,14 @@ protocol BuildCollectionInteracting: Sendable {
 class BuildCollectionInteractor: BuildCollectionInteracting {
     let apiService: CollectionAPI
     let state: SettingsState
+    let log: Logging
 
-    init(apiService: CollectionAPI, modelContext: ModelContext) {
+    init(apiService: CollectionAPI,
+         modelContext: ModelContext,
+         log: Logging = Log.makeSettingsLog()) {
         self.apiService = apiService
         self.state = SettingsState(modelContext: modelContext)
+        self.log = log
     }
 
     func fetchUserMetadata() async {
@@ -36,8 +40,8 @@ class BuildCollectionInteractor: BuildCollectionInteracting {
             let user = User(username: username, numberOfItems: numberOfItems)
             state.user = user
         } catch {
-            print(error)
             state.error = error
+            log.error("Failed to fetch user metadata: \(error)")
         }
     }
 

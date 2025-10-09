@@ -3,6 +3,7 @@
 //  Uchronic Spin
 //
 //  Created by Ettore Pasquini on 1/4/25.
+//  Copyright © 2025 Ettore Pasquini. All rights reserved.
 //
 
 import Foundation
@@ -24,13 +25,16 @@ final class AuthInteractor: AuthInteracting {
     private let credentialStore: CredentialStoring
     private var requestToken: String?
     private var requestTokenSecret: String?
+    private let log: Logging
 
     init(state: AuthState,
          apiService: OAuthAPI = APIService(),
-         credentialStore: CredentialStoring = CredentialStore()) {
+         credentialStore: CredentialStoring = CredentialStore(),
+         log: Logging = Log.makeAuthLog()) {
         self.state = state
         self.service = apiService
         self.credentialStore = credentialStore
+        self.log = log
     }
 
     func loadExistingAuth() async {
@@ -41,7 +45,7 @@ final class AuthInteractor: AuthInteracting {
                 state.isAuthenticated = true
             }
         } catch {
-            print("Failed to load credentials: \(error)")
+            log.warning("Failed to load credentials from keychain", error)
             // If loading fails, we simply don't set the user as authenticated
         }
     }
@@ -61,6 +65,7 @@ final class AuthInteractor: AuthInteracting {
         } catch {
             state.authError = error as? AuthError ?? .networkError(error)
             state.isAuthenticating = false
+            log.error("Failed to get request token", error)
         }
     }
 
@@ -76,6 +81,7 @@ final class AuthInteractor: AuthInteracting {
               let requestTokenSecret = requestTokenSecret
         else {
             state.authError = .missingRequestToken
+            log.error("Attempting to fetch access token without a request token/secret")
             return
         }
 
@@ -87,6 +93,7 @@ final class AuthInteractor: AuthInteracting {
         guard let verifier = verifier else {
             // if can't find the verifier, we probably had a bad request token
             state.authError = .invalidRequestToken
+            log.error("Obtained a request token without an OAuth verifier")
             return
         }
 
@@ -111,6 +118,7 @@ final class AuthInteractor: AuthInteracting {
             } else {
                 state.authError = .networkError(error)
             }
+            log.error("Error getting or saving access token", error)
         }
     }
 
@@ -120,7 +128,7 @@ final class AuthInteractor: AuthInteracting {
             await service.setAccessCredentials(token: nil, secret: nil)
             state.isAuthenticated = false
         } catch {
-            print("Error clearing credentials: \(error)")
+            log.warning("Error clearing credentials from keychain", error)
             // Continue with sign out even if keychain delete fails
             await service.setAccessCredentials(token: nil, secret: nil)
             state.isAuthenticated = false

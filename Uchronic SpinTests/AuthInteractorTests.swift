@@ -3,6 +3,7 @@
 //  Uchronic SpinTests
 //
 //  Created on 5/15/25.
+//  Copyright © 2025 Ettore Pasquini. All rights reserved.
 //
 
 import XCTest
@@ -33,7 +34,8 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         sut = AuthInteractor(
             state: state,
             apiService: mockAPIService,
-            credentialStore: mockCredentialStore
+            credentialStore: mockCredentialStore,
+            log: MockLog()
         )
     }
 

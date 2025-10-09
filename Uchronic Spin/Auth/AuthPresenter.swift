@@ -3,6 +3,7 @@
 //  Uchronic Spin
 //
 //  Created by Ettore Pasquini on 1/4/25.
+//  Copyright © 2025 Ettore Pasquini. All rights reserved.
 //
 
 import Foundation
