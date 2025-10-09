@@ -3,18 +3,19 @@
 //  Uchronic Spin
 //
 //  Created by Ettore Pasquini on 9/23/25.
+//  Copyright © 2025 Ettore Pasquini. All rights reserved.
 //
 
 import Foundation
 
 
 protocol CollectionAPI: Sendable {
-    func getNumberOfItems() async throws -> (username: String, numberOfItems: Int)
+    func getUserMetadata() async throws -> (username: String, numberOfItems: Int)
 }
 
 
 extension APIService: CollectionAPI {
-    func getNumberOfItems() async throws -> (username: String, numberOfItems: Int) {
+    func getUserMetadata() async throws -> (username: String, numberOfItems: Int) {
         guard accessToken != nil, accessTokenSecret != nil else {
             throw AuthError.missingAccessToken
         }

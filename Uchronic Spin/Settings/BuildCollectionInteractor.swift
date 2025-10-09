@@ -3,6 +3,7 @@
 //  Uchronic Spin
 //
 //  Created by Ettore Pasquini on 9/23/25.
+//  Copyright © 2025 Ettore Pasquini. All rights reserved.
 //
 
 import Foundation
@@ -29,7 +30,7 @@ class BuildCollectionInteractor: BuildCollectionInteracting {
 
     func fetchUserMetadata() async {
         do {
-            let (username, numberOfItems) = try await apiService.getNumberOfItems()
+            let (username, numberOfItems) = try await apiService.getUserMetadata()
 
             // store metadata in SwiftData DB
             let user = User(username: username, numberOfItems: numberOfItems)
