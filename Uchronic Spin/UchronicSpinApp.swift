@@ -24,17 +24,14 @@ struct UchronicSpinApp: App {
         self._authState = StateObject(wrappedValue: state)
         self.apiService = APIService()
         self.authInteractor = AuthInteractor(state: state, apiService: apiService)
-
-        // Check for existing credentials at launch
-        Task { [self] in
-            await self.authInteractor.loadExistingAuth()
-        }
     }
 
     var body: some Scene {
         WindowGroup {
             rootView
                 .task {
+                    // Check for existing credentials (and load if present)
+                    await self.authInteractor.loadExistingAuth()
                     log.debug("rootView modelContext: \(pointer(modelContainer.mainContext))")
                 }
         }

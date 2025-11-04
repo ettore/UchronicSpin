@@ -38,6 +38,10 @@ final class AuthInteractor: AuthInteracting {
     }
 
     func loadExistingAuth() async {
+        guard !state.isAuthenticated else {
+            return
+        }
+        
         do {
             if let credentials = try await credentialStore.loadCredentials() {
                 await service.setAccessCredentials(token: credentials.token,
