@@ -10,29 +10,52 @@ import Foundation
 import SwiftData
 
 
-protocol BuildCollectionInteracting: Sendable {
+/// Protocol used by the UI for fetching and building the user metadata.
+@MainActor
+protocol BuildCollectionInteracting {
     var apiService: CollectionAPI {get}
 
+    @discardableResult
+    func configureSettingsState(with: ModelContext) -> SettingsState
+    func configureStateIfNeeded(with: ModelContext) ->  SettingsState
     func fetchUserMetadata() async
     func deleteUserMetadata() async
 }
 
 
-@MainActor
+/// Uses the `apiService` to load user metadata into the `state`.
 class BuildCollectionInteractor: BuildCollectionInteracting {
     let apiService: CollectionAPI
-    let state: SettingsState
+    @MainActor private var state: SettingsState?
     let log: Logging
 
     init(apiService: CollectionAPI,
-         modelContext: ModelContext,
          log: Logging = Log.makeSettingsLog()) {
         self.apiService = apiService
-        self.state = SettingsState(modelContext: modelContext)
         self.log = log
     }
 
+    @MainActor
+    func configureSettingsState(with modelContext: ModelContext) -> SettingsState {
+        self.state = SettingsState(modelContext: modelContext)
+        return self.state!
+    }
+
+    @MainActor
+    func configureStateIfNeeded(with context: ModelContext) ->  SettingsState {
+        if let state = self.state {
+            return state
+        } else {
+            return configureSettingsState(with: context)
+        }
+    }
+
+    @MainActor
     func fetchUserMetadata() async {
+        guard let state = self.state else {
+            return
+        }
+
         do {
             let (username, numberOfItems) = try await apiService.getUserMetadata()
 
@@ -45,7 +68,8 @@ class BuildCollectionInteractor: BuildCollectionInteracting {
         }
     }
 
+    @MainActor
     func deleteUserMetadata() async {
-        state.deleteUserMetadata()
+        state?.deleteUserMetadata()
     }
 }

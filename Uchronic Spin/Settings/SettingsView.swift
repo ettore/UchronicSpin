@@ -10,8 +10,7 @@ import SwiftUI
 
 
 struct SettingsView: View {
-    let apiService: API
-    let buildInteractor: BuildCollectionInteractor
+    let buildInteractor: BuildCollectionInteracting
     let presenter: SettingsPresenter
     @ObservedObject var state: SettingsState
 
@@ -22,12 +21,11 @@ struct SettingsView: View {
 //        userData.first
 //    }
 
-    init(apiService: API, modelContext: ModelContext) {
-        self.apiService = apiService
-        self.buildInteractor = BuildCollectionInteractor(apiService: apiService,
-                                                         modelContext: modelContext)
-        self.presenter = SettingsPresenter(state: buildInteractor.state)
-        self.state = buildInteractor.state
+    init(buildInteractor: BuildCollectionInteracting,
+         state: SettingsState) {
+        self.buildInteractor = buildInteractor
+        self.presenter = SettingsPresenter(state: state)
+        self.state = state
     }
 
     var body: some View {
