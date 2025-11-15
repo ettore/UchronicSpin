@@ -17,20 +17,37 @@ class Artist: Decodable {
     private(set) var role: String?
     private(set) var resourceURL: URL
 
+    /*
+     Discogs has a couple more fields that i am currently ignoring:
+     case join // I think this is to "join" artists in releases with
+               // multiple authors
+     case tracks // to express the per-track contributions of an artist. Does
+                 // not seem used on the "artists" field of api responses for:
+                 // /users/<user>/collection/folders/0/releases
+     */
     enum CodingKeys: String, CodingKey {
         case id
         case name
-        case anv
-        case role
-        case resourceURL = "resource_url"
+        case anv // Artist Name Variation
+        case role // usually instruments played
+        case resourceURL = "resource_url" // api link to artist
     }
 
     required init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(String.self, forKey: .id)
+        let id = try container.decode(Int.self, forKey: .id)
+        self.id = "\(id)"
         name = try container.decode(String.self, forKey: .name)
-        anv = try container.decodeIfPresent(String.self, forKey: .anv)
-        role = try container.decodeIfPresent(String.self, forKey: .role)
+        if let anv = try container.decodeIfPresent(String.self, forKey: .anv) {
+            if !anv.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                self.anv = anv
+            }
+        }
+        if let role = try container.decodeIfPresent(String.self, forKey: .role) {
+            if !role.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                self.role = role
+            }
+        }
         resourceURL = try container.decode(URL.self, forKey: .resourceURL)
     }
 }
