@@ -5,9 +5,8 @@
 //  Created by Ettore Pasquini on 9/26/25.
 //
 
-// MARK: - Collection Models
 
-struct CollectionFolder: Codable {
+struct APIFolder: Codable, Sendable {
     let id: Int
     let count: Int
     let name: String

@@ -6,14 +6,12 @@
 //
 
 import Foundation
-import SwiftData
 
 
-@Model
-class Format: Decodable {
-    private(set) var name: String
-    private(set) var quantity: String
-    private(set) var descriptions: [String]
+struct APIFormat: Decodable, Sendable {
+    let name: String
+    let quantity: String
+    let descriptions: [String]
 
     enum CodingKeys: String, CodingKey {
         case name
@@ -22,7 +20,7 @@ class Format: Decodable {
         //case text // e.g. "blue labels"
     }
 
-    required init(from decoder: any Decoder) throws {
+    init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         name = try container.decode(String.self, forKey: .name)
         quantity = try container.decode(String.self, forKey: .quantity)

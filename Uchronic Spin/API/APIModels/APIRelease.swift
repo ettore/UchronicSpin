@@ -6,26 +6,25 @@
 //
 
 import Foundation
-import SwiftData
 
 
-@Model
-class Release: Decodable {
-    private(set) var id: String
-    private(set) var rating: Int
+struct APIRelease: Decodable, Sendable {
+    let id: String
+    let rating: Int
 
-    // stored inside "basic_information" dict
-    private(set) var url: URL?
-    private(set) var masterId: String
-    private(set) var masterURL: URL?
-    private(set) var thumbURL: URL?
-    private(set) var coverURL: URL?
-    private(set) var title: String
-    private(set) var year: Int?
-    private(set) var formats: [Format]
-    private(set) var artists: [Artist]
-    private(set) var genres: [String]
-    private(set) var styles: [String]
+    // info stored inside "basic_information" dict in API response
+    
+    let url: URL?
+    let masterId: String
+    let masterURL: URL?
+    let thumbURL: URL?
+    let coverURL: URL?
+    let title: String
+    let year: Int?
+    let formats: [APIFormat]
+    let artists: [APIArtist]
+    let genres: [String]
+    let styles: [String]
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -44,7 +43,7 @@ class Release: Decodable {
         case styles
     }
 
-    required init(from decoder: any Decoder) throws {
+    init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = "\(try container.decode(Int.self, forKey: .id))"
         rating = try container.decode(Int.self, forKey: .rating)
@@ -58,14 +57,30 @@ class Release: Decodable {
         thumbURL = URL(string: try info.decode(String.self, forKey: .thumbURL))
         coverURL = URL(string: try info.decode(String.self, forKey: .coverURL))
         title = try info.decode(String.self, forKey: .title)
-        if let year = try info.decodeIfPresent(Int.self, forKey: .year) {
-            if year != 0 {
-                self.year = year
-            }
+        if let year = try info.decodeIfPresent(Int.self, forKey: .year),
+           year != 0 {
+            self.year = year
+        } else {
+            self.year = nil
         }
-        formats = try info.decode([Format].self, forKey: .formats)
-        artists = try info.decode([Artist].self, forKey: .artists)
+        formats = try info.decode([APIFormat].self, forKey: .formats)
+        artists = try info.decode([APIArtist].self, forKey: .artists)
         genres = try info.decode([String].self, forKey: .genres)
         styles = try info.decode([String].self, forKey: .styles)
+    }
+}
+
+
+struct APIReleases: Decodable, Sendable {
+    let releases: [APIRelease]
+
+    enum CodingKeys: String, CodingKey {
+        case pagination
+        case releases
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.releases = try container.decode([APIRelease].self, forKey: .releases)
     }
 }

@@ -39,7 +39,7 @@ struct ParsingTests {
         }
         """#
 
-    let releaseJSON = #"""
+    static let releaseJSON = #"""
         {
             "id": 1448397,
             "instance_id": 150588447,
@@ -120,9 +120,29 @@ struct ParsingTests {
         }
         """#
 
+    let releasesJSON = """
+        {
+            "pagination": {
+                "page": 15,
+                "pages": 1490,
+                "per_page": 1,
+                "items": 1490,
+                "urls": {
+                    "first": "https://api.discogs.com/users/cubelogic/collection/folders/0/releases?page=1&per_page=1&sort=artist&sort_order=asc",
+                    "last": "https://api.discogs.com/users/cubelogic/collection/folders/0/releases?page=1490&per_page=1&sort=artist&sort_order=asc",
+                    "prev": "https://api.discogs.com/users/cubelogic/collection/folders/0/releases?page=14&per_page=1&sort=artist&sort_order=asc",
+                    "next": "https://api.discogs.com/users/cubelogic/collection/folders/0/releases?page=16&per_page=1&sort=artist&sort_order=asc"
+                }
+            },
+            "releases": [
+                \(ParsingTests.releaseJSON)
+            ]
+        }
+        """
+
     @Test func testArtist() async throws {
         let data = artistJSON.data(using: .utf8)!
-        let artist = try JSONDecoder().decode(Artist.self, from: data)
+        let artist = try JSONDecoder().decode(APIArtist.self, from: data)
         #expect(artist.id == "2532")
         #expect(artist.name == "Afrika Bambaataa & Soulsonic Force")
         #expect(artist.anv == "Afrika Bambaataa & The Soul Sonic Force")
@@ -132,7 +152,7 @@ struct ParsingTests {
 
     @Test func testFormat() async throws {
         let data = formatJSON.data(using: .utf8)!
-        let format = try JSONDecoder().decode(Format.self, from: data)
+        let format = try JSONDecoder().decode(APIFormat.self, from: data)
         #expect(format.name == "Vinyl")
         #expect(format.quantity == "1")
         #expect(format.descriptions.count == 5)
@@ -144,8 +164,8 @@ struct ParsingTests {
     }
 
     @Test func testRelease() async throws {
-        let data = releaseJSON.data(using: .utf8)!
-        let release = try JSONDecoder().decode(Release.self, from: data)
+        let data = ParsingTests.releaseJSON.data(using: .utf8)!
+        let release = try JSONDecoder().decode(APIRelease.self, from: data)
 
         #expect(release.id == "1448397")
         #expect(release.rating == 0)
@@ -164,5 +184,23 @@ struct ParsingTests {
         #expect(release.artists[1].name == "Planet Patrol")
         #expect(release.genres == ["Electronic", "Hip Hop"])
         #expect(release.styles == ["Electro", "Breaks"])
+    }
+
+    @Test func testReleaseArray() async throws {
+        let data = releasesJSON.data(using: .utf8)!
+        let releasesWrapper = try JSONDecoder().decode(APIReleases.self, from: data)
+        let releases = releasesWrapper.releases
+
+        #expect(releases.count == 1)
+        let firstRelease = releases.first!
+        #expect(firstRelease.id == "1448397")
+        #expect(firstRelease.masterId == "19152")
+        #expect(firstRelease.formats.count == 1)
+        #expect(firstRelease.formats[0].name == "Vinyl")
+        #expect(firstRelease.artists.count == 2)
+        #expect(firstRelease.artists[0].name == "Afrika Bambaataa & Soulsonic Force")
+        #expect(firstRelease.artists[1].name == "Planet Patrol")
+        #expect(firstRelease.genres == ["Electronic", "Hip Hop"])
+        #expect(firstRelease.styles == ["Electro", "Breaks"])
     }
 }
