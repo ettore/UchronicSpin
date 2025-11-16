@@ -15,7 +15,134 @@ protocol CollectionAPI: Sendable {
 }
 
 
+private let perPage: Int = 100
+
+
 extension APIService: CollectionAPI {
+
+    /// Fetch the entire collection for the given user by issuing page
+    /// requests concurrently.
+    ///
+    /// - Parameters:
+    ///   - username: The user's whose collection we want to get.
+    ///   - maxConcurrency: Max number of concurrent requests. This is capped
+    ///   between 1 and 6.
+    ///   - perPage: Number of items in a single page. This is capped
+    ///   between 1 and 100.
+    ///   - numberOfItems: The total number of items to fetch.
+    /// - Returns: A tuple with an array of releases in the user's collection
+    /// in pagination order, and the pages whose requests failed.
+    func getCollection(forUser username: String,
+                       withMaxConcurrency maxConcurrency: Int = 3,
+                       perPage: Int = perPage,
+                       numberOfItems: Int) async -> (releases: [APIRelease],
+                                                     failedPages: Set<Int>) {
+        let perPage = max(1, min(100, perPage))
+        let totalPages = Int(ceil(Double(numberOfItems) / Double(perPage)))
+        let actualMaxConcurrency = min(6, max(1, min(totalPages, maxConcurrency)))
+        var apiReleases = [Int: [APIRelease]]()
+        var failedPages: Set<Int> = []
+        var nextPage = 1
+
+        return await withTaskGroup(of: (page: Int,
+                                        releases: [APIRelease],
+                                        failedPages: Set<Int>).self) { group in
+            // start by adding a throttled number of tasks to the group
+            for page in 1...min(actualMaxConcurrency, totalPages) {
+                group.addTask {
+                    do {
+                        let releases = try await self.getCollection(page: page,
+                                                                    forUser: username)
+                        return (page: page, releases: releases, failedPages: [])
+                    } catch {
+                        return (page: page, releases: [], failedPages: [page])
+                    }
+                }
+                nextPage += 1
+            }
+
+            // we then wait for one task to complete, and once that happens
+            // we add the results to the `apiReleases` array, then issue a
+            // new page request
+            for await pageResults in group {
+                apiReleases[pageResults.page] = pageResults.releases
+                failedPages.formUnion(pageResults.failedPages)
+
+                if nextPage <= totalPages {
+                    group.addTask { [nextPage] in
+                        do {
+                            let releases = try await self.getCollection(page: nextPage,
+                                                                        forUser: username)
+                            return (page: nextPage, releases: releases, failedPages: [])
+                        } catch {
+                            return (page: nextPage, releases: [], failedPages: [nextPage])
+                        }
+                    }
+                    nextPage += 1
+                }
+            }
+
+            // retry failed pages one more time
+            await retry(failedPages: &failedPages,
+                        apiReleases: &apiReleases,
+                        forUser: username,
+                        perPage: perPage)
+
+            // flatten everything in page order
+            let allReleases = (1...totalPages).flatMap { apiReleases[$0] ?? [] }
+
+            return (allReleases, failedPages)
+        }
+    }
+
+    /// Fetch the entire collection for the given user by sequentially issuing
+    /// one request at a time.
+    ///
+    /// - Parameters:
+    ///   - username: The user's whose collection we want to get.
+    ///   - perPage: Number of items in a single page. This is capped
+    ///   between 1 and 100.
+    ///   - numberOfItems: The total number of items to fetch.
+    /// - Returns: A tuple with an array of releases in the user's collection
+    /// in pagination order, and the pages whose requests failed.
+    func getCollection(forUser username: String,
+                       perPage: Int = perPage,
+                       numberOfItems: Int) async -> (releases: [APIRelease],
+                                                     failedPages: Set<Int>) {
+        let perPage = max(1, min(100, perPage))
+        let totalPages = Int(ceil(Double(numberOfItems) / Double(perPage)))
+        var apiReleases = [Int: [APIRelease]]()
+        var failedPages: Set<Int> = []
+
+        for page in 1...totalPages {
+            do {
+                let releases = try await getCollection(page: page, forUser: username)
+                apiReleases[page] = releases
+            } catch {
+                failedPages.insert(page)
+            }
+        }
+
+        await retry(failedPages: &failedPages, apiReleases: &apiReleases,
+                    forUser: username, perPage: perPage)
+
+        let allReleases = (1...totalPages).flatMap { apiReleases[$0] ?? [] }
+        return (allReleases, failedPages)
+    }
+
+    func retry(failedPages: inout Set<Int>,
+               apiReleases: inout [Int: [APIRelease]],
+               forUser username: String,
+               perPage: Int = perPage) async {
+        for page in failedPages {
+            if let releases = try? await getCollection(page: page,
+                                                       forUser: username) {
+                apiReleases[page] = releases
+                failedPages.remove(page)
+            }
+        }
+    }
+
     func getCollection(page: Int, forUser username: String) async throws -> [APIRelease] {
         guard accessToken != nil, accessTokenSecret != nil else {
             throw AuthError.missingAccessToken
@@ -85,7 +212,7 @@ extension APIService: CollectionAPI {
 
     func collectionEndpoint(forUser username: String, page: Int) -> String {
         let root = collectionEndpointRoot(forUser: username)
-        return "\(root)/releases?sort=artist&sort_order=asc&per_page=100&page=\(page)"
+        return "\(root)/releases?sort=artist&sort_order=asc&per_page=\(perPage)&page=\(page)"
     }
 }
 
