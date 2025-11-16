@@ -171,8 +171,6 @@ struct ParsingTests {
         #expect(release.rating == 0)
         #expect(release.url == URL(string: "https://api.discogs.com/releases/1448397")!)
         #expect(release.masterId == "19152")
-        #expect(release.masterURL != nil)
-        #expect(release.masterURL == URL(string: "https://api.discogs.com/masters/19152"))
         #expect(release.thumbURL == URL(string: "https://i.discogs.com/nnje_6msUrTPkDIWhQc46ucs0Q55E-ovpsLH1NHYT_s/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE0NDgz/OTctMTIyMDYyODg4/My5qcGVn.jpeg"))
         #expect(release.coverURL == URL(string: "https://i.discogs.com/DxRxiX32d9prONi6SyfWsCeoAUgOnsWOh0V8q46C5YA/rs:fit/g:sm/q:90/h:500/w:497/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE0NDgz/OTctMTIyMDYyODg4/My5qcGVn.jpeg"))
         #expect(release.title == "Planet Rock")

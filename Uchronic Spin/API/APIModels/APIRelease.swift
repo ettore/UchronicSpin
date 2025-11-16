@@ -15,8 +15,7 @@ struct APIRelease: Decodable, Sendable {
     // info stored inside "basic_information" dict in API response
     
     let url: URL?
-    let masterId: String
-    let masterURL: URL?
+    let masterId: String?
     let thumbURL: URL?
     let coverURL: URL?
     let title: String
@@ -52,8 +51,12 @@ struct APIRelease: Decodable, Sendable {
         let info = try container.nestedContainer(keyedBy: CodingKeys.self,
                                                  forKey: .basicInformation)
         url = URL(string: try info.decode(String.self, forKey: .url))
-        masterId = "\(try info.decode(Int.self, forKey: .masterId))"
-        masterURL = URL(string: try info.decode(String.self, forKey: .masterURL))
+        if let masterID = try info.decodeIfPresent(Int.self, forKey: .masterId),
+           masterID != 0 {
+            self.masterId = "\(masterID)"
+        } else {
+            self.masterId = nil
+        }
         thumbURL = URL(string: try info.decode(String.self, forKey: .thumbURL))
         coverURL = URL(string: try info.decode(String.self, forKey: .coverURL))
         title = try info.decode(String.self, forKey: .title)
