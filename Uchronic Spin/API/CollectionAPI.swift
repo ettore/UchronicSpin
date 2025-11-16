@@ -10,18 +10,30 @@ import Foundation
 
 
 protocol CollectionAPI: Sendable {
-    func getCollection(page: Int, forUser: String) async throws -> [APIRelease]
+    func getCollection(forUser: String,
+                       withMaxConcurrency maxConcurrency: Int,
+                       numberOfItems: Int) async -> (releases: [APIRelease],
+                                                     failedPages: Set<Int>)
+
     func getUserMetadata() async throws -> (username: String, numberOfItems: Int)
 }
 
+extension CollectionAPI {
+    func getCollection(forUser username: String,
+                       numberOfItems numItems: Int) async -> (releases: [APIRelease],
+                                                              failedPages: Set<Int>) {
+        await getCollection(forUser: username,
+                            withMaxConcurrency: 3,
+                            numberOfItems: numItems)
+    }
+}
 
 private let perPage: Int = 100
 
 
 extension APIService: CollectionAPI {
 
-    /// Fetch the entire collection for the given user by issuing page
-    /// requests concurrently.
+    /// Fetch the entire collection for the given user.
     ///
     /// - Parameters:
     ///   - username: The user's whose collection we want to get.
@@ -33,13 +45,42 @@ extension APIService: CollectionAPI {
     /// - Returns: A tuple with an array of releases in the user's collection
     /// in pagination order, and the pages whose requests failed.
     func getCollection(forUser username: String,
-                       withMaxConcurrency maxConcurrency: Int = 3,
-                       perPage: Int = perPage,
+                       withMaxConcurrency maxConcurrency: Int,
                        numberOfItems: Int) async -> (releases: [APIRelease],
                                                      failedPages: Set<Int>) {
         let perPage = max(1, min(100, perPage))
         let totalPages = Int(ceil(Double(numberOfItems) / Double(perPage)))
         let actualMaxConcurrency = min(6, max(1, min(totalPages, maxConcurrency)))
+
+        if actualMaxConcurrency == 1 {
+            return await getCollection(forUser: username,
+                                       perPage: perPage,
+                                       totalPages: totalPages)
+        } else {
+            return await getCollection(forUser: username,
+                                       withMaxConcurrency: actualMaxConcurrency,
+                                       perPage: perPage,
+                                       totalPages: totalPages)
+        }
+    }
+
+    /// Fetch the entire collection for the given user by issuing page
+    /// requests concurrently.
+    ///
+    /// - Parameters:
+    ///   - username: The user's whose collection we want to get.
+    ///   - maxConcurrency: Max number of concurrent requests (uncapped).
+    ///   - perPage: Number of items in a single page. This must be
+    ///   between 1 and 100.
+    ///   - totalPages: The total number of pages to fetch.
+    /// - Returns: A tuple with an array of releases in the user's collection
+    /// in pagination order, and the pages whose requests failed.
+    private func getCollection(forUser username: String,
+                               withMaxConcurrency maxConcurrency: Int,
+                               perPage: Int = perPage,
+                               totalPages: Int) async -> (releases: [APIRelease],
+                                                          failedPages: Set<Int>) {
+
         var apiReleases = [Int: [APIRelease]]()
         var failedPages: Set<Int> = []
         var nextPage = 1
@@ -48,7 +89,7 @@ extension APIService: CollectionAPI {
                                         releases: [APIRelease],
                                         failedPages: Set<Int>).self) { group in
             // start by adding a throttled number of tasks to the group
-            for page in 1...min(actualMaxConcurrency, totalPages) {
+            for page in 1...min(maxConcurrency, totalPages) {
                 group.addTask {
                     do {
                         let releases = try await self.getCollection(page: page,
@@ -100,17 +141,15 @@ extension APIService: CollectionAPI {
     ///
     /// - Parameters:
     ///   - username: The user's whose collection we want to get.
-    ///   - perPage: Number of items in a single page. This is capped
+    ///   - perPage: Number of items in a single page. This must be
     ///   between 1 and 100.
-    ///   - numberOfItems: The total number of items to fetch.
+    ///   - totalPages: The total number of pages to fetch.
     /// - Returns: A tuple with an array of releases in the user's collection
     /// in pagination order, and the pages whose requests failed.
-    func getCollection(forUser username: String,
-                       perPage: Int = perPage,
-                       numberOfItems: Int) async -> (releases: [APIRelease],
-                                                     failedPages: Set<Int>) {
-        let perPage = max(1, min(100, perPage))
-        let totalPages = Int(ceil(Double(numberOfItems) / Double(perPage)))
+    private func getCollection(forUser username: String,
+                               perPage: Int = perPage,
+                               totalPages: Int) async -> (releases: [APIRelease],
+                                                          failedPages: Set<Int>) {
         var apiReleases = [Int: [APIRelease]]()
         var failedPages: Set<Int> = []
 
