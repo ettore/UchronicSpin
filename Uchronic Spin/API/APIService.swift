@@ -304,3 +304,15 @@ actor APIService: OAuthAPI {
 }
 
 extension APIService: API {}
+
+//------------------------------------------------------------------------------
+// MARK: - Testing helpers
+
+#if DEBUG
+extension APIService {
+    func setFakeAccessToken() async {
+        self.accessToken = "fake-token"
+        self.accessTokenSecret = "fake-secret"
+    }
+}
+#endif
