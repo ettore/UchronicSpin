@@ -13,25 +13,43 @@ protocol CollectionAPI: Sendable {
     func getCollection(forUser: String,
                        withMaxConcurrency maxConcurrency: Int,
                        numberOfItems: Int,
-                       perPage: Int) async -> (releases: [APIRelease],
-                                               failedPages: Set<Int>)
+                       perPage: Int) async -> PaginatedCollection
 
     func getUserMetadata() async throws -> (username: String, numberOfItems: Int)
 }
 
-private let perPage: Int = 100
 
 extension CollectionAPI {
     func getCollection(forUser username: String,
                        numberOfItems: Int,
-                       perPage: Int = perPage) async -> (releases: [APIRelease],
-                                                         failedPages: Set<Int>) {
+                       perPage: Int = perPage) async -> PaginatedCollection {
         await getCollection(forUser: username,
                             withMaxConcurrency: 3,
                             numberOfItems: numberOfItems,
                             perPage: perPage)
     }
 }
+
+
+private let perPage: Int = 100
+
+
+struct PaginatedCollection {
+    /// The releases on each page
+    var pagedReleases: [Int: [APIRelease]]
+
+    /// The pages that failed.
+    var failedPages: Set<Int>
+
+    let totalPages: Int
+    let perPage: Int
+    let username: String
+
+    var releases: [APIRelease] {
+        (0...totalPages).flatMap { pagedReleases[$0] ?? [] }
+    }
+}
+
 
 extension APIService: CollectionAPI {
 
@@ -44,13 +62,11 @@ extension APIService: CollectionAPI {
     ///   - perPage: Number of items in a single page. This is capped
     ///   between 1 and 100.
     ///   - numberOfItems: The total number of items to fetch.
-    /// - Returns: A tuple with an array of releases in the user's collection
-    /// in pagination order, and the pages whose requests failed.
+    /// - Returns: The user's paginated collection.
     func getCollection(forUser username: String,
                        withMaxConcurrency maxConcurrency: Int,
                        numberOfItems: Int,
-                       perPage: Int) async -> (releases: [APIRelease],
-                                               failedPages: Set<Int>) {
+                       perPage: Int) async -> PaginatedCollection {
         let perPage = max(1, min(100, perPage))
         let totalPages = Int(ceil(Double(numberOfItems) / Double(perPage)))
         let actualMaxConcurrency = min(6, max(1, min(totalPages, maxConcurrency)))
@@ -76,13 +92,11 @@ extension APIService: CollectionAPI {
     ///   - perPage: Number of items in a single page. This must be
     ///   between 1 and 100.
     ///   - totalPages: The total number of pages to fetch.
-    /// - Returns: A tuple with an array of releases in the user's collection
-    /// in pagination order, and the pages whose requests failed.
+    /// - Returns: The user's paginated collection.
     private func getCollection(forUser username: String,
                                withMaxConcurrency maxConcurrency: Int,
                                totalPages: Int,
-                               perPage: Int) async -> (releases: [APIRelease],
-                                                       failedPages: Set<Int>) {
+                               perPage: Int) async -> PaginatedCollection {
 
         var apiReleases = [Int: [APIRelease]]()
         var failedPages: Set<Int> = []
@@ -126,16 +140,16 @@ extension APIService: CollectionAPI {
                 }
             }
 
+            var collection = PaginatedCollection(pagedReleases: apiReleases,
+                                                 failedPages: failedPages,
+                                                 totalPages: totalPages,
+                                                 perPage: perPage,
+                                                 username: username)
+
             // retry failed pages one more time
-            await retry(failedPages: &failedPages,
-                        apiReleases: &apiReleases,
-                        forUser: username,
-                        perPage: perPage)
+            await retry(failedPagesFor: &collection)
 
-            // flatten everything in page order
-            let allReleases = (1...totalPages).flatMap { apiReleases[$0] ?? [] }
-
-            return (allReleases, failedPages)
+            return collection
         }
     }
 
@@ -147,12 +161,10 @@ extension APIService: CollectionAPI {
     ///   - perPage: Number of items in a single page. This must be
     ///   between 1 and 100.
     ///   - totalPages: The total number of pages to fetch.
-    /// - Returns: A tuple with an array of releases in the user's collection
-    /// in pagination order, and the pages whose requests failed.
+    /// - Returns: The user's paginated collection.
     private func getCollection(forUser username: String,
                                totalPages: Int,
-                               perPage: Int) async -> (releases: [APIRelease],
-                                                       failedPages: Set<Int>) {
+                               perPage: Int) async -> PaginatedCollection {
         var apiReleases = [Int: [APIRelease]]()
         var failedPages: Set<Int> = []
 
@@ -165,22 +177,29 @@ extension APIService: CollectionAPI {
             }
         }
 
-        await retry(failedPages: &failedPages, apiReleases: &apiReleases,
-                    forUser: username, perPage: perPage)
+        var collection = PaginatedCollection(pagedReleases: apiReleases,
+                                             failedPages: failedPages,
+                                             totalPages: totalPages,
+                                             perPage: perPage,
+                                             username: username)
 
-        let allReleases = (1...totalPages).flatMap { apiReleases[$0] ?? [] }
-        return (allReleases, failedPages)
+        await retry(failedPagesFor: &collection)
+
+        return collection
     }
 
-    func retry(failedPages: inout Set<Int>,
-               apiReleases: inout [Int: [APIRelease]],
-               forUser username: String,
-               perPage: Int = perPage) async {
-        for page in failedPages {
+    /// Retries fetching the given failed pages in a given paginated collection,
+    /// appending any new results to the same collection.
+    ///
+    /// - Parameters:
+    ///   - collection: The collection for which to attempt to refetch its
+    ///   failed pages.
+    func retry(failedPagesFor collection: inout PaginatedCollection) async {
+        for page in collection.failedPages {
             if let releases = try? await getCollection(page: page,
-                                                       forUser: username) {
-                apiReleases[page] = releases
-                failedPages.remove(page)
+                                                       forUser: collection.username) {
+                collection.pagedReleases[page] = releases
+                collection.failedPages.remove(page)
             }
         }
     }

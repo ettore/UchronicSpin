@@ -237,13 +237,14 @@ struct CollectionAPITests {
 
     @Test func testGetCollectionSequentially() async throws {
         let sut = await createSUT(mockSession: MockURLSession(data: fourItemsPageResponse))
-        let (releases, failedPages) = await sut.getCollection(forUser: "testuser",
-                                                              withMaxConcurrency: 1,
-                                                              numberOfItems: 4,
-                                                              perPage: 4)
+        let collection = await sut.getCollection(forUser: "testuser",
+                                                 withMaxConcurrency: 1,
+                                                 numberOfItems: 4,
+                                                 perPage: 4)
 
         // verify all releases are parsed correctly and kept in order
-        #expect(failedPages.count == 0)
+        #expect(collection.failedPages.count == 0)
+        let releases = collection.releases
         #expect(releases.count == 4)
         #expect(releases[0].id == "7676896")
         #expect(releases[1].id == "7734706")
