@@ -14,12 +14,12 @@ struct AuthView: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var state: AuthState
-    private let interactor: AuthInteracting
-    private let presenter: AuthPresenting
+    private let interactor: any AuthInteracting
+    private let presenter: any AuthPresenting
     
     init(state: AuthState,
-         interactor: AuthInteracting? = nil,
-         presenter: AuthPresenting? = nil) {
+         interactor: (any AuthInteracting)? = nil,
+         presenter: (any AuthPresenting)? = nil) {
         _state = StateObject(wrappedValue: state)
         self.interactor = interactor ?? AuthInteractor(state: state)
         self.presenter = presenter ?? AuthPresenter()
