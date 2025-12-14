@@ -49,7 +49,7 @@ final class OAuthServiceTests: XCTestCase {
 
     func testGetAuthorizationURL() {
         // Given
-        let sut = createSUT(mockSession: MockURLSession(data: Data()))
+        let sut = createSUT(mockSession: MockURLSession(singleData: Data()))
         let testToken = "test_token"
 
         // When
@@ -63,7 +63,7 @@ final class OAuthServiceTests: XCTestCase {
 
     func testGetRequestToken_Success() async throws {
         // Given
-        let mockSession = MockURLSession(data: makeRequestTokenResponse())
+        let mockSession = MockURLSession(singleData: makeRequestTokenResponse())
         let sut = createSUT(mockSession: mockSession)
 
         // When
@@ -93,7 +93,7 @@ final class OAuthServiceTests: XCTestCase {
 
     func testGetRequestToken_InvalidResponse() async {
         // Given
-        let mockSession = MockURLSession(data: "invalid_response".data(using: .utf8)!)
+        let mockSession = MockURLSession(singleData: "invalid_response".data(using: .utf8)!)
         let sut = createSUT(mockSession: mockSession)
 
         // When / Then
@@ -114,7 +114,7 @@ final class OAuthServiceTests: XCTestCase {
 
     func testGetRequestToken_EmptyResponse() async {
         // Given
-        let mockSession = MockURLSession(data: Data())
+        let mockSession = MockURLSession(singleData: Data())
         let sut = createSUT(mockSession: mockSession)
 
         // When / Then
@@ -135,7 +135,7 @@ final class OAuthServiceTests: XCTestCase {
 
     func testGetRequestToken_MissingTokenInResponse() async {
         // Given
-        let mockSession = MockURLSession(data: "oauth_token_secret=test_secret".data(using: .utf8)!)
+        let mockSession = MockURLSession(singleData: "oauth_token_secret=test_secret".data(using: .utf8)!)
         let sut = createSUT(mockSession: mockSession)
 
         // When / Then
@@ -156,7 +156,7 @@ final class OAuthServiceTests: XCTestCase {
 
     func testGetRequestToken_MissingSecretInResponse() async {
         // Given
-        let mockSession = MockURLSession(data: "oauth_token=test_token".data(using: .utf8)!)
+        let mockSession = MockURLSession(singleData: "oauth_token=test_token".data(using: .utf8)!)
         let sut = createSUT(mockSession: mockSession)
 
         // When / Then
@@ -177,7 +177,7 @@ final class OAuthServiceTests: XCTestCase {
 
     func testGetRequestToken_EmptyToken() async {
         // Given
-        let mockSession = MockURLSession(data: "oauth_token=&oauth_token_secret=test_secret".data(using: .utf8)!)
+        let mockSession = MockURLSession(singleData: "oauth_token=&oauth_token_secret=test_secret".data(using: .utf8)!)
         let sut = createSUT(mockSession: mockSession)
 
         // When / Then
@@ -199,7 +199,7 @@ final class OAuthServiceTests: XCTestCase {
     func testGetRequestToken_NetworkError() async {
         // Given
         let networkError = NSError(domain: "NetworkError", code: 1001, userInfo: nil)
-        let mockSession = MockURLSession(data: Data(), error: networkError)
+        let mockSession = MockURLSession(singleData: Data(), error: networkError)
         let sut = createSUT(mockSession: mockSession)
 
         // When / Then
@@ -217,7 +217,7 @@ final class OAuthServiceTests: XCTestCase {
 
     func testGetAccessToken_Success() async throws {
         // Given
-        let mockSession = MockURLSession(data: makeAccessTokenResponse())
+        let mockSession = MockURLSession(singleData: makeAccessTokenResponse())
         let sut = createSUT(mockSession: mockSession)
         let testRequestToken = "test_request_token"
         let testRequestSecret = "test_request_secret"
@@ -251,7 +251,7 @@ final class OAuthServiceTests: XCTestCase {
 
     func testGetAccessToken_InvalidResponse() async {
         // Given
-        let mockSession = MockURLSession(data: "invalid_response".data(using: .utf8)!)
+        let mockSession = MockURLSession(singleData: "invalid_response".data(using: .utf8)!)
         let sut = createSUT(mockSession: mockSession)
 
         // When / Then
@@ -276,7 +276,7 @@ final class OAuthServiceTests: XCTestCase {
 
     func testGetAccessToken_MissingToken() async {
         // Given
-        let mockSession = MockURLSession(data: "oauth_token_secret=test_secret".data(using: .utf8)!)
+        let mockSession = MockURLSession(singleData: "oauth_token_secret=test_secret".data(using: .utf8)!)
         let sut = createSUT(mockSession: mockSession)
 
         // When / Then
@@ -302,7 +302,7 @@ final class OAuthServiceTests: XCTestCase {
     func testGetAccessToken_NetworkError() async {
         // Given
         let networkError = NSError(domain: "NetworkError", code: 1001, userInfo: nil)
-        let mockSession = MockURLSession(data: Data(), error: networkError)
+        let mockSession = MockURLSession(singleData: Data(), error: networkError)
         let sut = createSUT(mockSession: mockSession)
 
         // When / Then

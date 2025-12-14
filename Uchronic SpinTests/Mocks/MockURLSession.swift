@@ -10,19 +10,30 @@ import XCTest
 
 
 final class MockURLSession: DataFetching, @unchecked Sendable {
-    let data: Data
-    let response: URLResponse
+    private let singleRequest = URLRequest(url: URL(string: "http://example.org")!)
+
+    // indexed by URLRequest::hashValue
+    var traffic: [Int: (Data, URLResponse)]
     let error: Error?
     var capturedRequest: URLRequest?
 
-    init(data: Data,
-         response: URLResponse = HTTPURLResponse(url: URL(string: "https://api.discogs.com")!,
-                                                 statusCode: 200,
-                                                 httpVersion: nil,
-                                                 headerFields: nil)!,
+    /// Use this in tests where your code is going to issue a single request,
+    /// and therefore expect a single response.
+    init(singleData: Data,
+         singleResponse: URLResponse = HTTPURLResponse(
+            url: URL(string: "https://api.discogs.com")!,
+            statusCode: 200,
+            httpVersion: nil,
+            headerFields: nil)!,
          error: Error? = nil) {
-        self.data = data
-        self.response = response
+        self.traffic = [singleRequest.hashValue: (singleData, singleResponse)]
+        self.error = error
+    }
+
+    /// Use this initializer when you are testing more complex network traffic.
+    init(traffic: [Int: (Data, URLResponse)] = [:],
+         error: Error? = nil) {
+        self.traffic = traffic
         self.error = error
     }
 
@@ -33,6 +44,12 @@ final class MockURLSession: DataFetching, @unchecked Sendable {
             throw error
         }
 
-        return (data, response)
+        if let responseInfo = traffic[request.hashValue] {
+            return responseInfo
+        } else if let responseInfo = traffic[singleRequest.hashValue] {
+            return responseInfo
+        } else {
+            fatalError("Error in setting of MockURLSession")
+        }
     }
 }

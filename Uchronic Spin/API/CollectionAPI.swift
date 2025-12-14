@@ -22,7 +22,7 @@ protocol CollectionAPI: Sendable {
 extension CollectionAPI {
     func getCollection(forUser username: String,
                        numberOfItems: Int,
-                       perPage: Int = perPage) async -> PaginatedCollection {
+                       perPage: Int = PER_PAGE) async -> PaginatedCollection {
         await getCollection(forUser: username,
                             withMaxConcurrency: 3,
                             numberOfItems: numberOfItems,
@@ -31,7 +31,7 @@ extension CollectionAPI {
 }
 
 
-private let perPage: Int = 100
+private let PER_PAGE: Int = 100
 
 
 struct PaginatedCollection {
@@ -110,7 +110,8 @@ extension APIService: CollectionAPI {
                 group.addTask {
                     do {
                         let releases = try await self.getCollection(page: page,
-                                                                    forUser: username)
+                                                                    forUser: username,
+                                                                    perPage: perPage)
                         return (page: page, releases: releases, failedPages: [])
                     } catch {
                         return (page: page, releases: [], failedPages: [page])
@@ -119,10 +120,13 @@ extension APIService: CollectionAPI {
                 nextPage += 1
             }
 
-            // we then wait for one task to complete, and once that happens
-            // we add the results to the `apiReleases` array, then issue a
-            // new page request
+            // we then wait for all the added tasks to complete, and then
+            // we add the results to the `apiReleases` array, then issue
+            // new page requests
+            // TODO: instead of waiting for all tasks to complete, add a task
+            //       as soon as one completes (maybe use `group.next()`?)
             for await pageResults in group {
+                // one loop iteration for every task we had added to `group`
                 apiReleases[pageResults.page] = pageResults.releases
                 failedPages.formUnion(pageResults.failedPages)
 
@@ -130,7 +134,8 @@ extension APIService: CollectionAPI {
                     group.addTask { [nextPage] in
                         do {
                             let releases = try await self.getCollection(page: nextPage,
-                                                                        forUser: username)
+                                                                        forUser: username,
+                                                                        perPage: perPage)
                             return (page: nextPage, releases: releases, failedPages: [])
                         } catch {
                             return (page: nextPage, releases: [], failedPages: [nextPage])
@@ -147,7 +152,7 @@ extension APIService: CollectionAPI {
                                                  username: username)
 
             // retry failed pages one more time
-            await retry(failedPagesFor: &collection)
+            await retry(failedPagesFor: &collection, perPage: perPage)
 
             return collection
         }
@@ -170,7 +175,7 @@ extension APIService: CollectionAPI {
 
         for page in 1...totalPages {
             do {
-                let releases = try await getCollection(page: page, forUser: username)
+                let releases = try await getCollection(page: page, forUser: username, perPage: perPage)
                 apiReleases[page] = releases
             } catch {
                 failedPages.insert(page)
@@ -183,7 +188,7 @@ extension APIService: CollectionAPI {
                                              perPage: perPage,
                                              username: username)
 
-        await retry(failedPagesFor: &collection)
+        await retry(failedPagesFor: &collection, perPage: perPage)
 
         return collection
     }
@@ -194,10 +199,12 @@ extension APIService: CollectionAPI {
     /// - Parameters:
     ///   - collection: The collection for which to attempt to refetch its
     ///   failed pages.
-    func retry(failedPagesFor collection: inout PaginatedCollection) async {
+    func retry(failedPagesFor collection: inout PaginatedCollection,
+               perPage: Int) async {
         for page in collection.failedPages {
             if let releases = try? await getCollection(page: page,
-                                                       forUser: collection.username) {
+                                                       forUser: collection.username,
+                                                       perPage: perPage) {
                 collection.pagedReleases[page] = releases
                 collection.failedPages.remove(page)
             }
@@ -205,12 +212,13 @@ extension APIService: CollectionAPI {
     }
 
     private func getCollection(page: Int,
-                               forUser username: String) async throws -> [APIRelease] {
+                               forUser username: String,
+                               perPage: Int) async throws -> [APIRelease] {
         guard accessToken != nil, accessTokenSecret != nil else {
             throw AuthError.missingAccessToken
         }
 
-        let endpoint = collectionEndpoint(forUser: username, page: page)
+        let endpoint = collectionEndpoint(forUser: username, page: page, perPage: perPage)
         let request = try createRequest("GET", endpoint)
         let (data, response) = try await urlSession.data(for: request)
 
@@ -272,7 +280,7 @@ extension APIService: CollectionAPI {
         return "\(baseURL)/users/\(username)/collection/folders/\(folderId)"
     }
 
-    func collectionEndpoint(forUser username: String, page: Int) -> String {
+    func collectionEndpoint(forUser username: String, page: Int, perPage: Int) -> String {
         let root = collectionEndpointRoot(forUser: username)
         return "\(root)/releases?sort=artist&sort_order=asc&per_page=\(perPage)&page=\(page)"
     }
