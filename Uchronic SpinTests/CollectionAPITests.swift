@@ -729,4 +729,63 @@ struct CollectionAPITests {
         #expect(releases[5].id == "7787184")
         #expect(releases[6].id == "14462207")
     }
+
+    @Test func testGetCollectionConcurrentlyWithSomeError() async throws {
+        // set up
+        let username = "fakeuser"
+        let perPage = 2
+
+        let rootEndpoint = "\(testBaseURL)/users/\(username)/collection/folders/0/releases?sort=artist&sort_order=asc&per_page=\(perPage)"
+
+        let dummySuccessResponse = HTTPURLResponse(
+            url: URL(string: testBaseURL)!,
+            statusCode: 200,
+            httpVersion: nil,
+            headerFields: nil)!
+        let dummyFailResponse = HTTPURLResponse(
+            url: URL(string: testBaseURL)!,
+            statusCode: 500,
+            httpVersion: nil,
+            headerFields: nil)!
+
+
+        let urlSession = MockURLSession()
+        let sut = await createSUT(mockSession: urlSession)
+
+        let req1 = try await sut.createRequest("GET", "\(rootEndpoint)&page=1")
+        let req2 = try await sut.createRequest("GET", "\(rootEndpoint)&page=2")
+        let req3 = try await sut.createRequest("GET", "\(rootEndpoint)&page=3")
+        let req4 = try await sut.createRequest("GET", "\(rootEndpoint)&page=4")
+
+        let traffic = [
+            req1.hashValue: (CollectionAPITests.twoItemMaxPage1ResponseData,
+                             dummySuccessResponse),
+            req2.hashValue: (CollectionAPITests.twoItemMaxPage2ResponseData,
+                             dummySuccessResponse),
+            req3.hashValue: ("esorciccio".data(using: .utf8)!,
+                             dummyFailResponse),
+            req4.hashValue: (CollectionAPITests.twoItemMaxPage4ResponseData,
+                             dummySuccessResponse),
+        ]
+        urlSession.traffic = traffic
+
+        // test
+        let collection = await sut.getCollection(
+            forUser: username,
+            withMaxConcurrency: 2,
+            numberOfItems: CollectionAPITests.numItems,
+            perPage: perPage)
+
+        // verify
+        #expect(collection.failedPages.count == 1)
+        #expect(collection.failedPages.contains(3))
+        let releases = collection.releases
+        #expect(releases.count == CollectionAPITests.numItems - perPage)
+        #expect(releases[0].id == "7676896")    // page 1
+        #expect(releases[1].id == "7734706")    //  ...
+        #expect(releases[2].id == "442736")     // page 2
+        #expect(releases[3].id == "1427682")    // ...
+        #expect(releases[4].id == "14462207")   // page 4
+    }
+
 }

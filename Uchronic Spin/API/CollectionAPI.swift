@@ -39,7 +39,7 @@ struct PaginatedCollection {
     var pagedReleases: [Int: [APIRelease]]
 
     /// The pages that failed.
-    var failedPages: Set<Int>
+    var failedPages: Set<Int> // TODO: could expand this to save the errors
 
     let totalPages: Int
     let perPage: Int
