@@ -33,7 +33,7 @@ struct MainView: View {
             .toolbar {
                 NavigationLink("Settings") {
                     let state = buildInteractor
-                        .configureStateIfNeeded(with: modelContext)
+                        .setUpStateIfNeeded(with: modelContext)
                     SettingsView(buildInteractor: buildInteractor,
                                  state: state)
                 }
@@ -43,11 +43,12 @@ struct MainView: View {
                 // View struct or the body is recomputed. However it IS run
                 // when the view is added to the hierarchy and when the
                 // view disappears and reappears.
-                // We have to create the state here because `modelContext` is
-                // not yet ready at init time.
-                buildInteractor
-                    .configureSettingsState(with: modelContext)
-                await buildInteractor.fetchUserMetadata()
+
+                // Loads data from SwiftData storage (or from network if needed)
+                // and set up state objects; we have to do so here instead than
+                // the initializer because `modelContext` is not yet ready at
+                // init time.
+                await buildInteractor.loadCollection(with: modelContext)
             }
         }
     }

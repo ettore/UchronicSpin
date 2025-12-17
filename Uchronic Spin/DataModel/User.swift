@@ -10,8 +10,9 @@ import SwiftData
 
 @Model
 class User {
-    var username: String
-    var numberOfItems: Int
+    private(set) var username: String
+    private(set) var numberOfItems: Int
+    var collection: Collection?
 
     init(username: String, numberOfItems: Int) {
         self.username = username

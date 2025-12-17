@@ -33,7 +33,8 @@ final class OAuthServiceTests: XCTestCase {
             consumerKey: testConsumerKey,
             consumerSecret: testConsumerSecret,
             baseURL: testBaseURL,
-            urlSession: mockSession
+            urlSession: mockSession,
+            log: MockLog()
         )
     }
 

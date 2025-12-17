@@ -19,10 +19,15 @@ struct UchronicSpinApp: App {
 
     init() {
         self.log = Log.make(for: "Main")
+
+        // TODO: remove this forced-escape. This will crash when the User model
+        //       changes and SwiftData won't be able to migrate it to the
+        //       new model.
         modelContainer = try! ModelContainer(for: User.self)
+        
         let state = AuthState(modelContext: modelContainer.mainContext)
         self._authState = StateObject(wrappedValue: state)
-        self.apiService = APIService()
+        self.apiService = APIService(log: self.log)
         self.authInteractor = AuthInteractor(state: state, apiService: apiService)
     }
 
@@ -48,7 +53,7 @@ struct UchronicSpinApp: App {
                         }
                     }
             } else {
-                AuthView(state: authState, interactor: authInteractor)
+                AuthView(interactor: authInteractor)
                     .onOpenURL { url in
                         Task {
                             await authInteractor.setUpStateFetchingAccessToken(from: url)

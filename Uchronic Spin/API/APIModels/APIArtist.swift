@@ -9,11 +9,19 @@ import Foundation
 
 
 struct APIArtist: Decodable, Sendable {
-    let id: String
+    /// If a release was voted to be removed by the community, and the user
+    /// had that release in the collection, somehow Discogs returns a nil
+    /// artist ID for that release.
+    let id: String?
+
     let name: String
     let anv: String?
     let role: String?
-    let resourceURL: URL
+
+    /// If a release was voted to be removed by the community, and the user
+    /// had that release in the collection, somehow Discogs returns a nil
+    /// resource URL for that release.
+    let resourceURL: URL?
 
     /*
      Discogs has a couple more fields that i am currently ignoring:
@@ -33,8 +41,11 @@ struct APIArtist: Decodable, Sendable {
 
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        let id = try container.decode(Int.self, forKey: .id)
-        self.id = "\(id)"
+        if let id = try container.decodeIfPresent(Int.self, forKey: .id) {
+            self.id = "\(id)"
+        } else {
+            self.id = nil
+        }
         name = try container.decode(String.self, forKey: .name)
         if let anv = try container.decodeIfPresent(String.self, forKey: .anv),
            !anv.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -48,6 +59,7 @@ struct APIArtist: Decodable, Sendable {
         } else {
             self.role = nil
         }
-        resourceURL = try container.decode(URL.self, forKey: .resourceURL)
+
+        resourceURL = try container.decodeIfPresent(URL.self, forKey: .resourceURL)
     }
 }

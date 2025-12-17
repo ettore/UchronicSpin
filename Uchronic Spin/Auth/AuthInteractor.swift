@@ -11,6 +11,7 @@ import AuthenticationServices
 import SwiftUI
 
 protocol AuthInteracting: Sendable {
+    var state: AuthState {get}
     func startAuth() async
     func setUpStateFetchingAccessToken(from: URL) async
     func loadExistingAuth() async
@@ -20,7 +21,7 @@ protocol AuthInteracting: Sendable {
 
 @MainActor
 final class AuthInteractor: AuthInteracting {
-    private let state: AuthState
+    let state: AuthState
     private let service: OAuthAPI
     private let credentialStore: CredentialStoring
     private var requestToken: String?
@@ -28,7 +29,7 @@ final class AuthInteractor: AuthInteracting {
     private let log: Logging
 
     init(state: AuthState,
-         apiService: OAuthAPI = APIService(),
+         apiService: OAuthAPI,
          credentialStore: CredentialStoring = CredentialStore(),
          log: Logging = Log.makeAuthLog()) {
         self.state = state

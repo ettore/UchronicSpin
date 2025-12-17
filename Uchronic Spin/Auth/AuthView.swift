@@ -17,11 +17,10 @@ struct AuthView: View {
     private let interactor: any AuthInteracting
     private let presenter: any AuthPresenting
     
-    init(state: AuthState,
-         interactor: (any AuthInteracting)? = nil,
+    init(interactor: any AuthInteracting,
          presenter: (any AuthPresenting)? = nil) {
-        _state = StateObject(wrappedValue: state)
-        self.interactor = interactor ?? AuthInteractor(state: state)
+        _state = StateObject(wrappedValue: interactor.state)
+        self.interactor = interactor
         self.presenter = presenter ?? AuthPresenter()
     }
     
@@ -62,5 +61,10 @@ struct AuthView: View {
 }
 
 #Preview {
-    AuthView(state: AuthState(modelContext: try! ModelContainer(for: User.self).mainContext))
+    AuthView(
+        interactor: AuthInteractor(
+            state: AuthState(modelContext: try! ModelContainer(for: User.self).mainContext),
+            apiService: APIService()
+        ),
+    )
 }

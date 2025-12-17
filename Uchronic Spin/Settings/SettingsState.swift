@@ -41,7 +41,7 @@ final class SettingsState: ObservableObject {
     init(modelContext: ModelContext,
          log: Logging = Log.makeSettingsLog()) {
         self.modelContext = modelContext
-        _user = modelContext.fetchUser()
+        _user = modelContext.fetchUser() // from SwiftData
         self.log = log
     }
 

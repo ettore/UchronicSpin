@@ -230,73 +230,64 @@ struct CollectionAPITests {
             }
         """#
 
-    static let release5 = #"""
+    // this release has an artist with a nil ID because it's a release that has
+    // been voted to be removed
+    static let releaseVotedForRemoval = #"""
         {
-            "id": 1700076,
-            "instance_id": 163898967,
-            "date_added": "2016-03-20T08:01:56-07:00",
+            "id": 3474392,
+            "instance_id": 145998116,
+            "date_added": "2015-11-04T14:50:52-08:00",
             "rating": 0,
             "basic_information": {
-                "id": 1700076,
-                "master_id": 136187,
-                "master_url": "https://api.discogs.com/masters/136187",
-                "resource_url": "https://api.discogs.com/releases/1700076",
-                "thumb": "https://i.discogs.com/in5FiBVpM58V7iaZYdbMNdYi_rKj2HxVbDPPWhwTfsc/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE3MDAw/NzYtMTIzNzgxODg2/MS5qcGVn.jpeg",
-                "cover_image": "https://i.discogs.com/eisTqjZDmbqLYHfzmwGEKT_rF0kVOoYGDTVlc-tb9R0/rs:fit/g:sm/q:90/h:300/w:300/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTE3MDAw/NzYtMTIzNzgxODg2/MS5qcGVn.jpeg",
-                "title": "The New Possibility: John Fahey's Guitar Soli Christmas Album",
-                "year": 1979,
+                "id": 3474392,
+                "master_id": 0,
+                "master_url": null,
+                "resource_url": "https://api.discogs.com/releases/3474392",
+                "thumb": "https://i.discogs.com/CJQrjEl7g6I0035b66SYAVv-2XbUHNwgG8FZn54dYiY/rs:fit/g:sm/q:40/h:150/w:150/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTM0NzQz/OTItMTMzMTgyMDY3/Ni5qcGVn.jpeg",
+                "cover_image": "https://i.discogs.com/_Uj0O4TRUJVwxIuDhaezgh0bhRuL1xlFLXNHPf7jucE/rs:fit/g:sm/q:90/h:384/w:425/czM6Ly9kaXNjb2dz/LWRhdGFiYXNlLWlt/YWdlcy9SLTM0NzQz/OTItMTMzMTgyMDY3/Ni5qcGVn.jpeg",
+                "title": "H.I.T. / Cybertone",
+                "year": 1992,
                 "formats": [
                     {
                         "name": "Vinyl",
                         "qty": "1",
                         "descriptions": [
-                            "LP",
-                            "Album",
-                            "Reissue"
+                            "7\"",
+                            "33 \u2153 RPM",
+                            "Limited Edition"
                         ]
                     }
                 ],
                 "labels": [
                     {
-                        "name": "Takoma",
-                        "catno": "TAK 7020",
+                        "name": "Contempo Records",
+                        "catno": "DUCA 182",
                         "entity_type": "1",
                         "entity_type_name": "Label",
-                        "id": 24549,
-                        "resource_url": "https://api.discogs.com/labels/24549"
+                        "id": null,
+                        "resource_url": null
                     }
                 ],
                 "artists": [
                     {
-                        "name": "John Fahey",
+                        "name": "Clock DVA",
                         "anv": "",
                         "join": "",
                         "role": "",
                         "tracks": "",
-                        "id": 65712,
-                        "resource_url": "https://api.discogs.com/artists/65712"
+                        "id": null,
+                        "resource_url": null
                     }
                 ],
                 "genres": [
-                    "Rock",
-                    "Folk, World, & Country"
+                    "Electronic"
                 ],
                 "styles": [
-                    "Folk Rock",
-                    "Acoustic",
-                    "Holiday"
+                    "Techno",
+                    "Electro",
+                    "Experimental"
                 ]
-            },
-            "notes": [
-                {
-                    "field_id": 1,
-                    "value": "Near Mint (NM or M-)"
-                },
-                {
-                    "field_id": 2,
-                    "value": "Very Good Plus (VG+)"
-                }
-            ]
+            }
         }
         """#
 
@@ -469,7 +460,7 @@ struct CollectionAPITests {
 
     static let sevenItemsPageResponseData: Data = """
         {
-            "releases": [\(release1), \(release2), \(release3), \(release4), \(release5), \(release6), \(release7)]
+            "releases": [\(release1), \(release2), \(release3), \(release4), \(releaseVotedForRemoval), \(release6), \(release7)]
         }
         """.data(using: .utf8)!
 
@@ -499,7 +490,7 @@ struct CollectionAPITests {
 
     static let oneItemPage5ResponseData: Data = """
         {
-            "releases": [\(release5)]
+            "releases": [\(releaseVotedForRemoval)]
         }
         """.data(using: .utf8)!
 
@@ -529,7 +520,7 @@ struct CollectionAPITests {
 
     static let twoItemMaxPage3ResponseData: Data = """
         {
-            "releases": [\(release5), \(release6)]
+            "releases": [\(releaseVotedForRemoval), \(release6)]
         }
         """.data(using: .utf8)!
 
@@ -547,7 +538,7 @@ struct CollectionAPITests {
 
     static let fourItemMaxPage2ResponseData: Data = """
         {
-            "releases": [\(release5), \(release6), \(release7)]
+            "releases": [\(releaseVotedForRemoval), \(release6), \(release7)]
         }
         """.data(using: .utf8)!
 
@@ -559,7 +550,8 @@ struct CollectionAPITests {
             consumerKey: testConsumerKey,
             consumerSecret: testConsumerSecret,
             baseURL: testBaseURL,
-            urlSession: mockSession
+            urlSession: mockSession,
+            log: MockLog()
         )
         await apiService.setFakeAccessToken()
         return apiService
@@ -610,7 +602,7 @@ struct CollectionAPITests {
         #expect(releases[1].id == "7734706")
         #expect(releases[2].id == "442736")
         #expect(releases[3].id == "1427682")
-        #expect(releases[4].id == "1700076")
+        #expect(releases[4].id == "3474392")
         #expect(releases[5].id == "7787184")
         #expect(releases[6].id == "14462207")
     }
@@ -672,7 +664,7 @@ struct CollectionAPITests {
         #expect(releases[1].id == "7734706")
         #expect(releases[2].id == "442736")
         #expect(releases[3].id == "1427682")
-        #expect(releases[4].id == "1700076")
+        #expect(releases[4].id == "3474392")
         #expect(releases[5].id == "7787184")
         #expect(releases[6].id == "14462207")
     }
@@ -725,7 +717,7 @@ struct CollectionAPITests {
         #expect(releases[1].id == "7734706")
         #expect(releases[2].id == "442736")
         #expect(releases[3].id == "1427682")
-        #expect(releases[4].id == "1700076")
+        #expect(releases[4].id == "3474392")
         #expect(releases[5].id == "7787184")
         #expect(releases[6].id == "14462207")
     }

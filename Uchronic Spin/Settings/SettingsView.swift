@@ -35,9 +35,15 @@ struct SettingsView: View {
 
                 Text("Number of items in collection: \(presenter.numberOfItemsInCollection)")
 
+                Button("Re-Fetch User Metadata") {
+                    Task {
+                        await buildInteractor.fetchUserMetadataIfNeeded(cachePolicy: .cacheIgnore)
+                    }
+                }
+
                 Button("Re-Fetch Collection") {
                     Task {
-                        await buildInteractor.fetchUserMetadata()
+                        await buildInteractor.fetchCollectionIfNeeded(cachePolicy: .cacheIgnore)
                     }
                 }
 

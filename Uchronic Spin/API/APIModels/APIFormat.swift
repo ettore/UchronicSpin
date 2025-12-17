@@ -12,12 +12,13 @@ struct APIFormat: Decodable, Sendable {
     let name: String
     let quantity: String
     let descriptions: [String]
+    let text: String?
 
     enum CodingKeys: String, CodingKey {
         case name
         case quantity = "qty"
         case descriptions // e.g. 7", 45 RPM, Single, Mini, EP
-        //case text // e.g. "blue labels"
+        case text // e.g. "blue labels" / "Red Vinyl"
     }
 
     init(from decoder: any Decoder) throws {
@@ -25,5 +26,6 @@ struct APIFormat: Decodable, Sendable {
         name = try container.decode(String.self, forKey: .name)
         quantity = try container.decode(String.self, forKey: .quantity)
         descriptions = try container.decode([String].self, forKey: .descriptions)
+        text = try container.decodeIfPresent(String.self, forKey: .text)
     }
 }

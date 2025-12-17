@@ -155,6 +155,7 @@ struct ParsingTests {
         let format = try JSONDecoder().decode(APIFormat.self, from: data)
         #expect(format.name == "Vinyl")
         #expect(format.quantity == "1")
+        #expect(format.text == "Blue-Green labels")
         #expect(format.descriptions.count == 5)
         #expect(format.descriptions[0] == "12\"")
         #expect(format.descriptions[1] == "33 ⅓ RPM")

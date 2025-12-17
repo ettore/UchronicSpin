@@ -71,17 +71,20 @@ actor APIService: OAuthAPI {
     private(set) var accessToken: String?
     private(set) var accessTokenSecret: String?
     private(set) var username: String?
+    let log: Logging
 
     init(consumerKey: String = CONSUMER_KEY,
          consumerSecret: String = CONSUMER_SECRET,
          userAgent: String = USER_AGENT,
          baseURL: String = "https://api.discogs.com",
-         urlSession: DataFetching = URLSession.shared) {
+         urlSession: DataFetching = URLSession.shared,
+         log: Logging = Log.makeAPIServiceLog()) {
         self.consumerKey = consumerKey
         self.consumerSecret = consumerSecret
         self.userAgent = userAgent
         self.baseURL = baseURL
         self.urlSession = urlSession
+        self.log = log
     }
 
     // MARK: - Authentication API

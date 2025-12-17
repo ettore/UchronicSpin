@@ -9,11 +9,14 @@
 import Foundation
 
 
+private let PER_PAGE: Int = 100
+
+
 protocol CollectionAPI: Sendable {
     func getCollection(forUser: String,
                        withMaxConcurrency maxConcurrency: Int,
                        numberOfItems: Int,
-                       perPage: Int) async -> PaginatedCollection
+                       perPage: Int) async -> APIPaginatedCollection
 
     func getUserMetadata() async throws -> (username: String, numberOfItems: Int)
 }
@@ -22,31 +25,11 @@ protocol CollectionAPI: Sendable {
 extension CollectionAPI {
     func getCollection(forUser username: String,
                        numberOfItems: Int,
-                       perPage: Int = PER_PAGE) async -> PaginatedCollection {
+                       perPage: Int = PER_PAGE) async -> APIPaginatedCollection {
         await getCollection(forUser: username,
                             withMaxConcurrency: 3,
                             numberOfItems: numberOfItems,
                             perPage: perPage)
-    }
-}
-
-
-private let PER_PAGE: Int = 100
-
-
-struct PaginatedCollection {
-    /// The releases on each page
-    var pagedReleases: [Int: [APIRelease]]
-
-    /// The pages that failed.
-    var failedPages: Set<Int> // TODO: could expand this to save the errors
-
-    let totalPages: Int
-    let perPage: Int
-    let username: String
-
-    var releases: [APIRelease] {
-        (0...totalPages).flatMap { pagedReleases[$0] ?? [] }
     }
 }
 
@@ -66,7 +49,7 @@ extension APIService: CollectionAPI {
     func getCollection(forUser username: String,
                        withMaxConcurrency maxConcurrency: Int,
                        numberOfItems: Int,
-                       perPage: Int) async -> PaginatedCollection {
+                       perPage: Int) async -> APIPaginatedCollection {
         let perPage = max(1, min(100, perPage))
         let totalPages = Int(ceil(Double(numberOfItems) / Double(perPage)))
         let actualMaxConcurrency = min(6, max(1, min(totalPages, maxConcurrency)))
@@ -96,7 +79,7 @@ extension APIService: CollectionAPI {
     private func getCollection(forUser username: String,
                                withMaxConcurrency maxConcurrency: Int,
                                totalPages: Int,
-                               perPage: Int) async -> PaginatedCollection {
+                               perPage: Int) async -> APIPaginatedCollection {
 
         var apiReleases = [Int: [APIRelease]]()
         var failedPages: Set<Int> = []
@@ -145,11 +128,11 @@ extension APIService: CollectionAPI {
                 }
             }
 
-            var collection = PaginatedCollection(pagedReleases: apiReleases,
-                                                 failedPages: failedPages,
-                                                 totalPages: totalPages,
-                                                 perPage: perPage,
-                                                 username: username)
+            var collection = APIPaginatedCollection(pagedReleases: apiReleases,
+                                                    failedPages: failedPages,
+                                                    totalPages: totalPages,
+                                                    perPage: perPage,
+                                                    username: username)
 
             // retry failed pages one more time
             await retry(failedPagesFor: &collection, perPage: perPage)
@@ -169,7 +152,7 @@ extension APIService: CollectionAPI {
     /// - Returns: The user's paginated collection.
     private func getCollection(forUser username: String,
                                totalPages: Int,
-                               perPage: Int) async -> PaginatedCollection {
+                               perPage: Int) async -> APIPaginatedCollection {
         var apiReleases = [Int: [APIRelease]]()
         var failedPages: Set<Int> = []
 
@@ -182,11 +165,11 @@ extension APIService: CollectionAPI {
             }
         }
 
-        var collection = PaginatedCollection(pagedReleases: apiReleases,
-                                             failedPages: failedPages,
-                                             totalPages: totalPages,
-                                             perPage: perPage,
-                                             username: username)
+        var collection = APIPaginatedCollection(pagedReleases: apiReleases,
+                                                failedPages: failedPages,
+                                                totalPages: totalPages,
+                                                perPage: perPage,
+                                                username: username)
 
         await retry(failedPagesFor: &collection, perPage: perPage)
 
@@ -199,8 +182,9 @@ extension APIService: CollectionAPI {
     /// - Parameters:
     ///   - collection: The collection for which to attempt to refetch its
     ///   failed pages.
-    func retry(failedPagesFor collection: inout PaginatedCollection,
+    func retry(failedPagesFor collection: inout APIPaginatedCollection,
                perPage: Int) async {
+        log.info("Retrying pages [\(collection.failedPages)]...")
         for page in collection.failedPages {
             if let releases = try? await getCollection(page: page,
                                                        forUser: collection.username,
@@ -214,12 +198,14 @@ extension APIService: CollectionAPI {
     private func getCollection(page: Int,
                                forUser username: String,
                                perPage: Int) async throws -> [APIRelease] {
+        log.debug("Attempting to fetch page \(page)...")
         guard accessToken != nil, accessTokenSecret != nil else {
             throw AuthError.missingAccessToken
         }
 
         let endpoint = collectionEndpoint(forUser: username, page: page, perPage: perPage)
         let request = try createRequest("GET", endpoint)
+        log.info("Fetching page \(page)...")
         let (data, response) = try await urlSession.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
