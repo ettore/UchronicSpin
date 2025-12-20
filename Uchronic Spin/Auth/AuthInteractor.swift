@@ -30,7 +30,7 @@ final class AuthInteractor: AuthInteracting {
 
     init(state: AuthState,
          apiService: OAuthAPI,
-         credentialStore: CredentialStoring = CredentialStore(),
+         credentialStore: CredentialStoring,
          log: Logging = Log.makeAuthLog()) {
         self.state = state
         self.service = apiService

@@ -34,7 +34,9 @@ struct MainView: View {
                 NavigationLink("Settings") {
                     let state = buildInteractor
                         .setUpStateIfNeeded(with: modelContext)
+                    let presenter = SettingsPresenter(state: state)
                     SettingsView(buildInteractor: buildInteractor,
+                                 presenter: presenter,
                                  state: state)
                 }
             }

@@ -18,10 +18,10 @@ struct AuthView: View {
     private let presenter: any AuthPresenting
     
     init(interactor: any AuthInteracting,
-         presenter: (any AuthPresenting)? = nil) {
+         presenter: (any AuthPresenting)) {
         _state = StateObject(wrappedValue: interactor.state)
         self.interactor = interactor
-        self.presenter = presenter ?? AuthPresenter()
+        self.presenter = presenter
     }
     
     var body: some View {
@@ -64,7 +64,9 @@ struct AuthView: View {
     AuthView(
         interactor: AuthInteractor(
             state: AuthState(modelContext: try! ModelContainer(for: User.self).mainContext),
-            apiService: APIService()
+            apiService: APIService(),
+            credentialStore: CredentialStore()
         ),
+        presenter: AuthPresenter()
     )
 }

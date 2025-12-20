@@ -8,12 +8,14 @@
 import Foundation
 
 
+@MainActor
 protocol SettingsPresenting {
     var numberOfItemsInCollection: String {get}
+    var username: String {get}
 }
 
-@MainActor
-class SettingsPresenter {
+
+class SettingsPresenter: SettingsPresenting {
     private let state: SettingsState
 
     init(state: SettingsState) {

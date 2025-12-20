@@ -11,7 +11,7 @@ import SwiftUI
 
 struct SettingsView: View {
     let buildInteractor: BuildCollectionInteracting
-    let presenter: SettingsPresenter
+    let presenter: SettingsPresenting
     @ObservedObject var state: SettingsState
 
     // this loads the username when the view is show on the screen
@@ -22,9 +22,10 @@ struct SettingsView: View {
 //    }
 
     init(buildInteractor: BuildCollectionInteracting,
+         presenter: SettingsPresenting,
          state: SettingsState) {
         self.buildInteractor = buildInteractor
-        self.presenter = SettingsPresenter(state: state)
+        self.presenter = presenter
         self.state = state
     }
 

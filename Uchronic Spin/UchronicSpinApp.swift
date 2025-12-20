@@ -28,7 +28,9 @@ struct UchronicSpinApp: App {
         let state = AuthState(modelContext: modelContainer.mainContext)
         self._authState = StateObject(wrappedValue: state)
         self.apiService = APIService(log: self.log)
-        self.authInteractor = AuthInteractor(state: state, apiService: apiService)
+        self.authInteractor = AuthInteractor(state: state,
+                                             apiService: apiService,
+                                             credentialStore: CredentialStore())
     }
 
     var body: some Scene {
@@ -53,7 +55,7 @@ struct UchronicSpinApp: App {
                         }
                     }
             } else {
-                AuthView(interactor: authInteractor)
+                AuthView(interactor: authInteractor, presenter: AuthPresenter())
                     .onOpenURL { url in
                         Task {
                             await authInteractor.setUpStateFetchingAccessToken(from: url)
