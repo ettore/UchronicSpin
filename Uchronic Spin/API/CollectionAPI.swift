@@ -18,6 +18,10 @@ protocol CollectionAPI: Sendable {
                        numberOfItems: Int,
                        perPage: Int) async -> APIPaginatedCollection
 
+    func retry(failedPages: inout Set<Int>,
+               username: String,
+               perPage: Int) async -> [APIRelease]
+
     func getUserMetadata() async throws -> (username: String, numberOfItems: Int)
 }
 
@@ -30,6 +34,13 @@ extension CollectionAPI {
                             withMaxConcurrency: 3,
                             numberOfItems: numberOfItems,
                             perPage: perPage)
+    }
+
+    func retry(failedPages: inout Set<Int>,
+               username: String) async -> [APIRelease] {
+        await retry(failedPages: &failedPages,
+                    username: username,
+                    perPage: PER_PAGE)
     }
 }
 
@@ -128,16 +139,11 @@ extension APIService: CollectionAPI {
                 }
             }
 
-            var collection = APIPaginatedCollection(pagedReleases: apiReleases,
-                                                    failedPages: failedPages,
-                                                    totalPages: totalPages,
-                                                    perPage: perPage,
-                                                    username: username)
-
-            // retry failed pages one more time
-            await retry(failedPagesFor: &collection, perPage: perPage)
-
-            return collection
+            return APIPaginatedCollection(pagedReleases: apiReleases,
+                                          failedPages: failedPages,
+                                          totalPages: totalPages,
+                                          perPage: perPage,
+                                          username: username)
         }
     }
 
@@ -165,34 +171,35 @@ extension APIService: CollectionAPI {
             }
         }
 
-        var collection = APIPaginatedCollection(pagedReleases: apiReleases,
-                                                failedPages: failedPages,
-                                                totalPages: totalPages,
-                                                perPage: perPage,
-                                                username: username)
-
-        await retry(failedPagesFor: &collection, perPage: perPage)
-
-        return collection
+        return APIPaginatedCollection(pagedReleases: apiReleases,
+                                      failedPages: failedPages,
+                                      totalPages: totalPages,
+                                      perPage: perPage,
+                                      username: username)
     }
 
     /// Retries fetching the given failed pages in a given paginated collection,
     /// appending any new results to the same collection.
     ///
     /// - Parameters:
-    ///   - collection: The collection for which to attempt to refetch its
-    ///   failed pages.
-    func retry(failedPagesFor collection: inout APIPaginatedCollection,
-               perPage: Int) async {
-        log.info("Retrying pages [\(collection.failedPages)]...")
-        for page in collection.failedPages {
+    ///   - failedPages: Pages that previously failed that we should refetch.
+    ///   - username: The desired user.
+    ///   - perPage: How many items per request.
+    func retry(failedPages: inout Set<Int>,
+               username: String,
+               perPage: Int) async -> [APIRelease] {
+        log.info("Retrying pages [\(failedPages)]...")
+        var newReleases = [APIRelease]()
+        for page in failedPages {
             if let releases = try? await getCollection(page: page,
-                                                       forUser: collection.username,
+                                                       forUser: username,
                                                        perPage: perPage) {
-                collection.pagedReleases[page] = releases
-                collection.failedPages.remove(page)
+                newReleases += releases
+                failedPages.remove(page)
             }
         }
+
+        return newReleases
     }
 
     private func getCollection(page: Int,
