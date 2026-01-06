@@ -12,7 +12,7 @@
 /// - Important: different errors -- with different underlying causes and
 /// developer friendly descriptions / errorIDs -- may have the same user
 /// friendly description.
-public protocol FriendlyError: Error {
+public protocol FriendlyError: Error, CustomStringConvertible {
 
     /// A localized description of the error that will be understandable by
     /// users of the app.
@@ -25,6 +25,7 @@ public protocol FriendlyError: Error {
     /// **Default implementation provided.**
     var devFriendlyDescription: String {get}
 }
+
 
 // MARK: - Default Implementations
 

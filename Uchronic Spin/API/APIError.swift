@@ -8,13 +8,17 @@
 
 import Foundation
 
+// TODO: reimplement with protocols/structs instead of enums to avoid
+//       breaking SOLID Open/Closed principle
 enum APIError: LocalizedError {
     case invalidResponse(String)
     case decodingError(Error)
     case httpError(statusCode: Int, message: String?)
     case invalidURL
+}
 
-    var errorDescription: String? {
+extension APIError: FriendlyError {
+    var description: String {
         switch self {
         case .invalidResponse(let endpoint):
             return "Invalid response for endpoint: \(endpoint)"
@@ -29,9 +33,7 @@ enum APIError: LocalizedError {
             return "Invalid URL"
         }
     }
-}
 
-extension APIError: FriendlyError {
     var userFriendlyMessage: String {
         switch self {
         case .invalidResponse(let endpoint):

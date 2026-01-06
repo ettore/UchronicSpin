@@ -59,15 +59,18 @@ extension OAuthAPI {
 
 /// The main API service.
 ///
-/// The main class only covers authentication and common utilities.
-/// Actual APIs such as collection etc are available in extensions.
+/// The responsibility of this actor is to provide an interface to
+/// Discogs' public API.
+///
+/// The core implementation covers authentication and common utilities, but
+/// it is fully extensible for things like fetching the user collection, etc.
 actor APIService: OAuthAPI {
     let verifierParam: String = "oauth_verifier"
     private let consumerKey: String
     private let consumerSecret: String
     private let userAgent: String
     let baseURL: String
-    let urlSession: DataFetching
+    let dataFetcher: DataFetching
     private(set) var accessToken: String?
     private(set) var accessTokenSecret: String?
     private(set) var username: String?
@@ -78,12 +81,12 @@ actor APIService: OAuthAPI {
          userAgent: String = USER_AGENT,
          baseURL: String = "https://api.discogs.com",
          urlSession: DataFetching = URLSession.shared,
-         log: Logging = Log.makeAPIServiceLog()) {
+         log: Logging) {
         self.consumerKey = consumerKey
         self.consumerSecret = consumerSecret
         self.userAgent = userAgent
         self.baseURL = baseURL
-        self.urlSession = urlSession
+        self.dataFetcher = urlSession
         self.log = log
     }
 
@@ -138,7 +141,7 @@ actor APIService: OAuthAPI {
         request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
 
         // submit request
-        let (data, _) = try await urlSession.data(for: request)
+        let (data, _) = try await dataFetcher.data(for: request)
 
         // parse response
         let response = String(data: data, encoding: .utf8)
@@ -198,7 +201,7 @@ actor APIService: OAuthAPI {
         let endpoint = "\(baseURL)/oauth/identity"
         let request = try createRequest("GET", endpoint)
 
-        let (data, response) = try await urlSession.data(for: request)
+        let (data, response) = try await dataFetcher.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse(endpoint)
         }
@@ -215,7 +218,7 @@ actor APIService: OAuthAPI {
         return username
     }
 
-    // MARK: - Helpers
+    // MARK: - Auth Private Helpers
 
     private func generateNonce() -> String {
         let uuid = UUID().uuidString
@@ -260,7 +263,7 @@ actor APIService: OAuthAPI {
         "\(consumerSecret.rfc3986PercentEncoded)&\((accessTokenSecret ?? "").rfc3986PercentEncoded)"
     }
 
-    func createOAuthHeader(
+    private func createOAuthHeader(
         method: String,
         endpoint: String
     ) -> String {
@@ -290,6 +293,8 @@ actor APIService: OAuthAPI {
 
         return "OAuth \(authHeader)"
     }
+
+    // MARK: - Generic Helpers
 
     func createRequest(_ method: String, _ endpoint: String) throws -> URLRequest {
         guard let url = URL(string: endpoint) else {

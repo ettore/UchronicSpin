@@ -18,7 +18,7 @@ actor CredentialStore: CredentialStoring {
     private let tokenKey = "auth.accessToken"
     private let secretKey = "auth.accessTokenSecret"
 
-    init(keychainService: KeychainServicing = KeychainService()) {
+    init(keychainService: KeychainServicing) {
         self.keychainService = keychainService
     }
 

@@ -50,7 +50,7 @@ struct SettingsView: View {
 
                 Button("Delete Data") {
                     Task {
-                        await buildInteractor.deleteUserMetadata()
+                        await buildInteractor.deleteAllUserData()
                     }
                 }
 

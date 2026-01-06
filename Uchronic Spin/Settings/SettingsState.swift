@@ -10,8 +10,12 @@ import Foundation
 import SwiftData
 
 
-/// This state object describes whether the collection has been loaded
-/// entirely or not, if an error occurred, and if we have user information
+/// The state of all the user's settings.
+///
+/// This state object describes various user settings, such as:
+/// - the user info;
+/// - whether the collection has been loaded entirely or not;
+/// - if an error occurred.
 final class SettingsState: ObservableObject {
     @Published var error: Error?
     @Published var hasLoadedWholeCollection = false
@@ -19,11 +23,11 @@ final class SettingsState: ObservableObject {
     private let log: Logging
 
     // NB! it's fundamental this variable remains @Published for UI to work!
-    @Published private var _user: User?
+    @Published private var _user: (any UserProtocol)?
 
     /// Computed property that reads/saves/deletes user data on persistent
     /// storage via SwiftData. Set to `nil` to delete.
-    @MainActor var user: User? {
+    @MainActor var user: (any UserProtocol)? {
         get {
             return _user
         }
@@ -38,15 +42,14 @@ final class SettingsState: ObservableObject {
     }
 
     @MainActor
-    init(modelContext: ModelContext,
-         log: Logging = Log.makeSettingsLog()) {
+    init(modelContext: ModelContext, log: Logging) {
         self.modelContext = modelContext
         _user = modelContext.fetchUser() // from SwiftData
         self.log = log
     }
 
     @MainActor
-    func deleteUserMetadata() {
+    func deleteAllUserData() {
         user = nil
     }
 

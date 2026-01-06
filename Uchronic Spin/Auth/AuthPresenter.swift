@@ -9,6 +9,7 @@
 import Foundation
 
 
+/// Presentation logic for authentication.
 protocol AuthPresenting {
     var welcomeMessage: String { get }
     var authButtonTitle: String { get }

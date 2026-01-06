@@ -26,19 +26,19 @@ protocol Logging {
 class Log: Logging {
     private let logger: Logger
 
-    static func makeAuthLog() -> Log {
+    static func makeAuthLog() -> Logging {
         make(for: "Auth")
     }
 
-    static func makeAPIServiceLog() -> Log {
+    static func makeAPIServiceLog() -> Logging {
         make(for: "API")
     }
 
-    static func makeSettingsLog() -> Log {
+    static func makeSettingsLog() -> Logging {
         make(for: "Settings")
     }
 
-    static func make(for category: String) -> Log {
+    static func make(for category: String) -> Logging {
         let bundleID = Bundle.main.bundleIdentifier ?? "UchronicSpin"
         return Log(logger: Logger(subsystem: bundleID, category: category))
     }

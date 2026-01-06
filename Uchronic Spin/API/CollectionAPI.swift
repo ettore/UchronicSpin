@@ -9,43 +9,49 @@
 import Foundation
 
 
+private let MAX_CONCURRENCY: Int = 3
 private let PER_PAGE: Int = 100
 
 
 protocol CollectionAPI: Sendable {
-    func getCollection(forUser: String,
-                       withMaxConcurrency maxConcurrency: Int,
-                       numberOfItems: Int,
-                       perPage: Int) async -> APIPaginatedCollection
+    /// Fetch the username and number of items for the currently
+    /// authenticated user.
+    func getCollectionMetadata() async throws -> (username: String, numberOfItems: Int)
 
-    func retry(failedPages: inout Set<Int>,
-               username: String,
-               perPage: Int) async -> [APIRelease]
-
-    func getUserMetadata() async throws -> (username: String, numberOfItems: Int)
-}
-
-
-extension CollectionAPI {
+    /// Fetch the entire collection for the given user.
+    ///
+    /// - Parameters:
+    ///   - username: The user's whose collection we want to get.
+    ///   - numberOfItems: The total number of items to fetch.
+    /// - Returns: The user's paginated collection.
     func getCollection(forUser username: String,
-                       numberOfItems: Int,
-                       perPage: Int = PER_PAGE) async -> APIPaginatedCollection {
-        await getCollection(forUser: username,
-                            withMaxConcurrency: 3,
-                            numberOfItems: numberOfItems,
-                            perPage: perPage)
-    }
+                       numberOfItems: Int) async -> APIPaginatedCollection
 
+    /// Reload a given set of pages.
+    ///
+    /// If some pages failed to load after calling
+    /// `getCollection(forUser:numberOfItems:)`
+    /// one can re-attempt to load them using this API.
+    ///
+    /// - Parameters:
+    ///   - failedPages: The pages of the collection to reload. Upon return,
+    ///   this will no longer contain the pages that were now successfully
+    ///   loaded.
+    ///   - username: The username for which to reload pages.
+    /// - Returns: An array of releases.
     func retry(failedPages: inout Set<Int>,
-               username: String) async -> [APIRelease] {
-        await retry(failedPages: &failedPages,
-                    username: username,
-                    perPage: PER_PAGE)
-    }
+               username: String) async -> [APIRelease]
 }
 
 
 extension APIService: CollectionAPI {
+    func getCollection(forUser username: String,
+                       numberOfItems: Int) async -> APIPaginatedCollection {
+        await getCollection(forUser: username,
+                            withMaxConcurrency: MAX_CONCURRENCY,
+                            numberOfItems: numberOfItems,
+                            perPage: PER_PAGE)
+    }
 
     /// Fetch the entire collection for the given user.
     ///
@@ -53,9 +59,9 @@ extension APIService: CollectionAPI {
     ///   - username: The user's whose collection we want to get.
     ///   - maxConcurrency: Max number of concurrent requests. This is capped
     ///   between 1 and 6.
+    ///   - numberOfItems: The total number of items to fetch.
     ///   - perPage: Number of items in a single page. This is capped
     ///   between 1 and 100.
-    ///   - numberOfItems: The total number of items to fetch.
     /// - Returns: The user's paginated collection.
     func getCollection(forUser username: String,
                        withMaxConcurrency maxConcurrency: Int,
@@ -178,13 +184,27 @@ extension APIService: CollectionAPI {
                                       username: username)
     }
 
-    /// Retries fetching the given failed pages in a given paginated collection,
-    /// appending any new results to the same collection.
+    func retry(failedPages: inout Set<Int>,
+               username: String) async -> [APIRelease] {
+        await retry(failedPages: &failedPages,
+                    username: username,
+                    perPage: PER_PAGE)
+    }
+
+    /// Reload a given set of pages.
+    ///
+    /// If some pages failed to load after calling
+    /// `getCollection(forUser:withMaxConcurrency:numberOfItems:perPage:)`
+    /// one can re-attempt to load them using this API.
     ///
     /// - Parameters:
-    ///   - failedPages: Pages that previously failed that we should refetch.
-    ///   - username: The desired user.
-    ///   - perPage: How many items per request.
+    ///   - failedPages: The pages of the collection to reload. Upon return,
+    ///   this will no longer contain the pages that were now successfully
+    ///   loaded.
+    ///   - username: The username for which to reload pages.
+    ///   - perPage: For consistency, this must match the value that was
+    ///   used when `getCollection(...)` was called.
+    /// - Returns: An array of releases.
     func retry(failedPages: inout Set<Int>,
                username: String,
                perPage: Int) async -> [APIRelease] {
@@ -213,7 +233,7 @@ extension APIService: CollectionAPI {
         let endpoint = collectionEndpoint(forUser: username, page: page, perPage: perPage)
         let request = try createRequest("GET", endpoint)
         log.info("Fetching page \(page)...")
-        let (data, response) = try await urlSession.data(for: request)
+        let (data, response) = try await dataFetcher.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse(endpoint)
@@ -234,7 +254,7 @@ extension APIService: CollectionAPI {
         }
     }
 
-    func getUserMetadata() async throws -> (username: String, numberOfItems: Int) {
+    func getCollectionMetadata() async throws -> (username: String, numberOfItems: Int) {
         guard accessToken != nil, accessTokenSecret != nil else {
             throw AuthError.missingAccessToken
         }
@@ -243,7 +263,7 @@ extension APIService: CollectionAPI {
         let endpoint = collectionEndpointRoot(forUser: username)
         let request = try createRequest("GET", endpoint)
 
-        let (data, response) = try await urlSession.data(for: request)
+        let (data, response) = try await dataFetcher.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse(endpoint)

@@ -17,7 +17,8 @@ enum CachePolicy: Int {
 }
 
 
-/// Protocol used by the UI for fetching and building the user metadata.
+/// Protocol used by the UI for fetching user's data, including their
+/// collection and other metadata, and build related data structures.
 @MainActor
 protocol BuildCollectionInteracting {
     var apiService: CollectionAPI {get}
@@ -26,10 +27,12 @@ protocol BuildCollectionInteracting {
     func setUpStateIfNeeded(with: ModelContext) -> SettingsState
     func fetchUserMetadataIfNeeded(cachePolicy: CachePolicy) async
     func fetchCollectionIfNeeded(cachePolicy: CachePolicy) async
-    func deleteUserMetadata() async
+    func deleteAllUserData() async
 }
 
 
+/// Fetches and builds the user's music collection from Discogs.
+/// 
 /// Uses an API service to load user data (such as username and collection)
 /// into a state object observable by SwiftUI (or other front-ends).
 class BuildCollectionInteractor: BuildCollectionInteracting {
@@ -37,8 +40,7 @@ class BuildCollectionInteractor: BuildCollectionInteracting {
     @MainActor private var state: SettingsState?
     let log: Logging
 
-    init(apiService: CollectionAPI,
-         log: Logging = Log.makeSettingsLog()) {
+    init(apiService: CollectionAPI, log: Logging) {
         self.apiService = apiService
         self.log = log
     }
@@ -64,7 +66,7 @@ class BuildCollectionInteractor: BuildCollectionInteracting {
     /// - Returns: The state object that was loaded with data from storage.
     @discardableResult @MainActor
     private func setUpSettingsState(with modelContext: ModelContext) -> SettingsState {
-        let state = SettingsState(modelContext: modelContext)
+        let state = SettingsState(modelContext: modelContext, log: log)
         self.state = state
         return state
     }
@@ -90,7 +92,7 @@ class BuildCollectionInteractor: BuildCollectionInteracting {
         }
 
         do {
-            let (username, numberOfItems) = try await apiService.getUserMetadata()
+            let (username, numberOfItems) = try await apiService.getCollectionMetadata()
 
             // store metadata in SwiftData DB
             let user = User(username: username, numberOfItems: numberOfItems)
@@ -130,7 +132,7 @@ class BuildCollectionInteractor: BuildCollectionInteracting {
     }
 
     @MainActor
-    private func fetchWholeCollection(user: User) async {
+    private func fetchWholeCollection(user: any UserProtocol) async {
         // we have no collection at all, so go fetch it
         let paginatedCollection = await apiService
             .getCollection(forUser: user.username,
@@ -140,7 +142,7 @@ class BuildCollectionInteractor: BuildCollectionInteracting {
     }
 
     @MainActor
-    func deleteUserMetadata() async {
-        state?.deleteUserMetadata()
+    func deleteAllUserData() async {
+        state?.deleteAllUserData()
     }
 }

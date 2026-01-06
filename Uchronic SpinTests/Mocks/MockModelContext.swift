@@ -9,6 +9,6 @@
 
 
 class MockModelContext: UserModelContext {
-    func saveUser(_ user: User?) throws {
+    func saveUser(_ user: (any UserProtocol)?) throws {
     }
 }

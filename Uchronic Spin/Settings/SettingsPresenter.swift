@@ -15,6 +15,7 @@ protocol SettingsPresenting {
 }
 
 
+/// Presentation logic for Settings.
 class SettingsPresenter: SettingsPresenting {
     private let state: SettingsState
 

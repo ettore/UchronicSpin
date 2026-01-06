@@ -8,7 +8,7 @@
 
 import Foundation
 
-enum AuthError: LocalizedError {
+enum AuthError: LocalizedError, CustomStringConvertible {
     case missingRequestToken
     case invalidRequestToken
     case missingAccessToken
@@ -19,7 +19,7 @@ enum AuthError: LocalizedError {
     case invalidUsername(Int, String?)
     case persistentStorageError(Error)
 
-    var errorDescription: String? {
+    var description: String {
         switch self {
         case .missingRequestToken:
             return "Failed to obtain request token"

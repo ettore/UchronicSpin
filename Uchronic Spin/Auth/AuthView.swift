@@ -64,8 +64,10 @@ struct AuthView: View {
     AuthView(
         interactor: AuthInteractor(
             state: AuthState(modelContext: try! ModelContainer(for: User.self).mainContext),
-            apiService: APIService(),
-            credentialStore: CredentialStore()
+            apiService: APIService(log: Log.makeAuthLog()),
+            credentialStore: CredentialStore(
+                keychainService: KeychainService(serviceName: "AuthViewPreview")),
+            log: Log.makeAuthLog()
         ),
         presenter: AuthPresenter()
     )

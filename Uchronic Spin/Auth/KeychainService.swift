@@ -24,7 +24,11 @@ protocol KeychainServicing: Sendable {
 final class KeychainService: KeychainServicing {
     private let serviceName: String
 
-    init(serviceName: String = Bundle.main.bundleIdentifier ?? "com.howlingtree.Uchronic-Spin") {
+    /// Designated initializer.
+    ///
+    /// - Parameter serviceName: The name of the service for the keychain
+    /// item to be stored.
+    init(serviceName: String) {
         self.serviceName = serviceName
     }
 

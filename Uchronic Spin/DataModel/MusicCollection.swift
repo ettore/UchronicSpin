@@ -10,8 +10,14 @@
 import SwiftData
 
 
+protocol MusicCollecting: PersistentModel {
+    func rebuildReleasesSetIfNeeded()
+    var failedPages: Set<Int> {get}
+}
+
+
 @Model
-class Collection {
+class MusicCollection: MusicCollecting {
     private var _releases: [Release]
     @Transient private(set) var releases: Set<Release> = []
 
@@ -41,13 +47,13 @@ class Collection {
 
 
 extension APIPaginatedCollection {
-    func vendPersistentModel() -> Collection {
+    func vendPersistentModel() -> MusicCollection {
         // Convert the API model's paged releases into persistent Release models
         let releases = pagedReleases.reduce([]) { partialResult, keyValue in
             partialResult + keyValue.value.map { $0.vendPersistentModel() }
         }
 
-        return Collection(
+        return MusicCollection(
             releases: releases,
             failedPages: failedPages,
             totalPages: totalPages,

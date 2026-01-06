@@ -19,6 +19,8 @@ protocol AuthInteracting: Sendable {
     func resetIsAuthenticatingIfNeeded(forScenePhase phase: ScenePhase) async
 }
 
+
+/// The business logic usable by the UI to authenticate the user.
 @MainActor
 final class AuthInteractor: AuthInteracting {
     let state: AuthState
@@ -31,7 +33,7 @@ final class AuthInteractor: AuthInteracting {
     init(state: AuthState,
          apiService: OAuthAPI,
          credentialStore: CredentialStoring,
-         log: Logging = Log.makeAuthLog()) {
+         log: Logging) {
         self.state = state
         self.service = apiService
         self.credentialStore = credentialStore

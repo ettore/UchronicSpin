@@ -9,15 +9,16 @@ import SwiftData
 
 
 protocol UserModelContext {
-    func saveUser(_ user: User?) throws
+    func saveUser(_ user: (any UserProtocol)?) throws
 }
 
+
 extension ModelContext: UserModelContext {
-    func fetchUser() -> User? {
+    func fetchUser() -> (any UserProtocol)? {
         (try? fetch(FetchDescriptor<User>()))?.first
     }
 
-    func saveUser(_ user: User?) throws {
+    func saveUser(_ user: (any UserProtocol)?) throws {
         try delete(model: User.self)
         if let user = user {
             insert(user)
