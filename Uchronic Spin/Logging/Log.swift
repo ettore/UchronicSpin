@@ -6,7 +6,6 @@
 //  Copyright © 2025 Ettore Pasquini. All rights reserved.
 //
 
-import Foundation
 import os
 
 
@@ -26,24 +25,7 @@ protocol Logging {
 class Log: Logging {
     private let logger: Logger
 
-    static func makeAuthLog() -> Logging {
-        make(for: "Auth")
-    }
-
-    static func makeAPIServiceLog() -> Logging {
-        make(for: "API")
-    }
-
-    static func makeSettingsLog() -> Logging {
-        make(for: "Settings")
-    }
-
-    static func make(for category: String) -> Logging {
-        let bundleID = Bundle.main.bundleIdentifier ?? "UchronicSpin"
-        return Log(logger: Logger(subsystem: bundleID, category: category))
-    }
-
-    private init(logger: Logger? = nil) {
+    init(logger: Logger? = nil) {
         self.logger = logger ?? Logger()
     }
 

@@ -18,7 +18,7 @@ struct UchronicSpinApp: App {
     private let log: Logging
 
     init() {
-        self.log = Log.make(for: "AppMain")
+        self.log = LogFactory.make(for: "AppMain")
 
         // TODO: remove this forced-escape. This will crash when the User model
         //       changes and SwiftData won't be able to migrate it to the
@@ -27,14 +27,14 @@ struct UchronicSpinApp: App {
         
         let state = AuthState(modelContext: modelContainer.mainContext)
         self._authState = StateObject(wrappedValue: state)
-        self.apiService = APIService(log: Log.makeAPIServiceLog())
+        self.apiService = APIService(log: LogFactory.makeAPILog())
         let keychain = KeychainService(
             serviceName: Bundle.main.bundleIdentifier ?? "com.howlingtree.Uchronic-Spin")
         let credsStore = CredentialStore(keychainService: keychain)
         self.authInteractor = AuthInteractor(state: state,
                                              apiService: apiService,
                                              credentialStore: credsStore,
-                                             log: Log.makeAuthLog())
+                                             log: LogFactory.makeAuthLog())
     }
 
     var body: some Scene {
