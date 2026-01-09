@@ -20,7 +20,7 @@ struct MainView: View {
 
     init(apiService: API) {
         self.apiService = apiService
-        let settingsLog = Log.makeSettingsLog()
+        let settingsLog = LogFactory.makeSettingsLog()
         buildInteractor = BuildCollectionInteractor(apiService: apiService,
                                                     log: settingsLog)
     }
@@ -59,5 +59,5 @@ struct MainView: View {
 }
 
 #Preview {
-    MainView(apiService: APIService(log: Log.makeSettingsLog()))
+    MainView(apiService: APIService(log: LogFactory.makeSettingsLog()))
 }

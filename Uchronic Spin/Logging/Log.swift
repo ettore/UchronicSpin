@@ -23,27 +23,29 @@ protocol Logging {
     func fault(_ message: String, _ error: Error)
 }
 
-class Log: Logging {
-    private let logger: Logger
+enum LogFactory {
+    static func makeSettingsLog() -> Logging {
+        make(for: "Settings")
+    }
 
     static func makeAuthLog() -> Logging {
         make(for: "Auth")
     }
 
-    static func makeAPIServiceLog() -> Logging {
+    static func makeAPILog() -> Logging {
         make(for: "API")
-    }
-
-    static func makeSettingsLog() -> Logging {
-        make(for: "Settings")
     }
 
     static func make(for category: String) -> Logging {
         let bundleID = Bundle.main.bundleIdentifier ?? "UchronicSpin"
         return Log(logger: Logger(subsystem: bundleID, category: category))
     }
+}
 
-    private init(logger: Logger? = nil) {
+fileprivate class Log: Logging {
+    private let logger: Logger
+
+    fileprivate init(logger: Logger? = nil) {
         self.logger = logger ?? Logger()
     }
 
