@@ -27,7 +27,7 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         try await super.setUp()
 
         let modelContext = MockModelContext()
-        state = AuthState(modelContext: modelContext)
+        state = AuthState(persistenceContext: modelContext)
         mockAPIService = MockOAuthService()
         mockCredentialStore = MockCredentialStore()
 

@@ -9,6 +9,10 @@
 
 
 class MockModelContext: UserModelContext {
+    func fetchUser() -> (any UserProtocol)? {
+        return nil
+    }
+    
     func saveUser(_ user: (any UserProtocol)?) throws {
     }
 }

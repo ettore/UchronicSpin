@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import SwiftData
 
 
 enum CachePolicy: Int {
@@ -23,8 +22,8 @@ enum CachePolicy: Int {
 protocol BuildCollectionInteracting {
     var apiService: CollectionAPI {get}
 
-    func loadCollection(with: ModelContext) async
-    func setUpStateIfNeeded(with: ModelContext) -> SettingsState
+    func loadCollection(with: UserModelContext) async
+    func setUpStateIfNeeded(with: UserModelContext) -> SettingsState
     func fetchUserMetadataIfNeeded(cachePolicy: CachePolicy) async
     func fetchCollectionIfNeeded(cachePolicy: CachePolicy) async
     func deleteAllUserData() async
@@ -45,34 +44,34 @@ class BuildCollectionInteractor: BuildCollectionInteracting {
         self.log = log
     }
 
-    /// Triggers SwiftData to load data from storage, or load collection from
-    /// the network if needed.
+    /// Load data from persistent storage or network if needed.
     ///
     /// After loading from storage / network, collection data is then saved
     /// into a `SettingState` object.
     ///
-    /// - Parameter modelContext: The SwiftData context to use.
+    /// - Parameter persistenceContext: The persistence system to use.
     @MainActor
-    func loadCollection(with modelContext: ModelContext) async {
-        setUpSettingsState(with: modelContext)
+    func loadCollection(with persistenceContext: UserModelContext) async {
+        setUpSettingsState(with: persistenceContext)
         await fetchUserMetadataIfNeeded(cachePolicy: .cachePreferred)
         await fetchCollectionIfNeeded(cachePolicy: .cachePreferred)
     }
 
-    /// Triggers SwiftData to load data from storage and save it into
+    /// Triggers persistence layer to load data and save it into
     /// a `SettingState` object.
     ///
-    /// - Parameter modelContext: The SwiftData context to use.
+    /// - Parameter persistenceContext: The persistence system to use to
+    /// store data, such as SwiftData.
     /// - Returns: The state object that was loaded with data from storage.
     @discardableResult @MainActor
-    private func setUpSettingsState(with modelContext: ModelContext) -> SettingsState {
-        let state = SettingsState(modelContext: modelContext, log: log)
+    private func setUpSettingsState(with persistenceContext: UserModelContext) -> SettingsState {
+        let state = SettingsState(persistenceContext: persistenceContext, log: log)
         self.state = state
         return state
     }
 
     @MainActor
-    func setUpStateIfNeeded(with context: ModelContext) -> SettingsState {
+    func setUpStateIfNeeded(with context: UserModelContext) -> SettingsState {
         if let state = self.state {
             return state
         } else {
@@ -94,7 +93,7 @@ class BuildCollectionInteractor: BuildCollectionInteracting {
         do {
             let (username, numberOfItems) = try await apiService.getCollectionMetadata()
 
-            // store metadata in SwiftData DB
+            // store user in state object (which will take care of persisting it)
             let user = User(username: username, numberOfItems: numberOfItems)
             state.user = user
         } catch {

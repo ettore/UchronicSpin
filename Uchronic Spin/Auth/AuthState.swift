@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import SwiftData
 
 
 /// State that can affect the authentication UI.
@@ -24,7 +23,7 @@ final class AuthState: ObservableObject {
         didSet {
             if !isAuthenticated {
                 do {
-                    try modelContext?.saveUser(nil)
+                    try persistenceContext?.saveUser(nil)
                 } catch {
                     authError = .persistentStorageError(error)
                 }
@@ -32,10 +31,10 @@ final class AuthState: ObservableObject {
         }
     }
 
-    var modelContext: UserModelContext?
+    var persistenceContext: UserModelSaving?
 
-    init(modelContext: UserModelContext) {
-        self.modelContext = modelContext
+    init(persistenceContext: UserModelSaving) {
+        self.persistenceContext = persistenceContext
     }
 
     var hasError: Bool {

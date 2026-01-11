@@ -25,7 +25,7 @@ struct UchronicSpinApp: App {
         //       new model.
         modelContainer = try! ModelContainer(for: User.self)
         
-        let state = AuthState(modelContext: modelContainer.mainContext)
+        let state = AuthState(persistenceContext: modelContainer.mainContext)
         self._authState = StateObject(wrappedValue: state)
         self.apiService = APIService(log: LogFactory.makeAPILog())
         let keychain = KeychainService(

@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import SwiftData
 
 
 /// The state of all the user's settings.
@@ -19,21 +18,24 @@ import SwiftData
 final class SettingsState: ObservableObject {
     @Published var error: Error?
     @Published var hasLoadedWholeCollection = false
-    @MainActor var modelContext: ModelContext
+
+    /// The persistent storage mechanism.
+    @MainActor var persistenceContext: UserModelContext
+
     private let log: Logging
 
     // NB! it's fundamental this variable remains @Published for UI to work!
     @Published private var _user: (any UserProtocol)?
 
     /// Computed property that reads/saves/deletes user data on persistent
-    /// storage via SwiftData. Set to `nil` to delete.
+    /// storage such as SwiftData. Set to `nil` to delete.
     @MainActor var user: (any UserProtocol)? {
         get {
             return _user
         }
         set {
             do {
-                try modelContext.saveUser(newValue)
+                try persistenceContext.saveUser(newValue)
                 _user = newValue
             } catch {
                 log.error("Error saving user \(user?.username ?? "nil") to ModelContext", error)
@@ -42,9 +44,9 @@ final class SettingsState: ObservableObject {
     }
 
     @MainActor
-    init(modelContext: ModelContext, log: Logging) {
-        self.modelContext = modelContext
-        _user = modelContext.fetchUser() // from SwiftData
+    init(persistenceContext: UserModelContext, log: Logging) {
+        self.persistenceContext = persistenceContext
+        _user = persistenceContext.fetchUser()
         self.log = log
     }
 
