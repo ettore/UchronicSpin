@@ -6,8 +6,6 @@
 //  Copyright © 2025 Ettore Pasquini. All rights reserved.
 //
 
-import Foundation
-
 
 enum CachePolicy: Int {
     case cacheIgnore

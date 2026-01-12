@@ -98,7 +98,7 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
 
     func testStartAuth_Success_SetsRequestTokenAndOpensURL() async {
         // When
-        await sut.startAuth()
+        await sut.startAuth(appOpener: UIApplication.shared)
 
         // Then
         XCTAssertTrue(state.isAuthenticating)
@@ -111,7 +111,7 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         mockAPIService.shouldThrowOnRequestToken = true
 
         // When
-        await sut.startAuth()
+        await sut.startAuth(appOpener: UIApplication.shared)
 
         // Then
         XCTAssertFalse(state.isAuthenticating)
@@ -127,7 +127,7 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
         let expectedSecret = mockAPIService.accessTokenResponse.secret
 
         // First set up the request token
-        await sut.startAuth()
+        await sut.startAuth(appOpener: UIApplication.shared)
 
         // When
         let url = mockAPIService.tokenURL
@@ -147,7 +147,7 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
 
     func testSetUpStateFetchingAccessToken_WithMissingVerifier_SetsAuthError() async {
         // Given
-        await sut.startAuth()
+        await sut.startAuth(appOpener: UIApplication.shared)
 
         // When - URL without a verifier
         let url = URL(string: "https://example.com/callback")!
@@ -191,7 +191,7 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
     func testSetUpStateFetchingAccessToken_WhenServiceThrowsError_SetsAuthError() async {
         // Given
         mockAPIService.shouldThrowOnAccessToken = true
-        await sut.startAuth()
+        await sut.startAuth(appOpener: UIApplication.shared)
 
         // When
         let url = mockAPIService.tokenURL
@@ -214,7 +214,7 @@ final class AuthInteractorTests: XCTestCase, @unchecked Sendable {
     func testSetUpStateFetchingAccessToken_WhenKeychainThrowsError_SetsAuthError() async {
         // Given
         mockCredentialStore.shouldThrowOnSave = true
-        await sut.startAuth()
+        await sut.startAuth(appOpener: UIApplication.shared)
 
         // When
         let url = mockAPIService.tokenURL

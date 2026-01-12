@@ -33,7 +33,7 @@ struct AuthView: View {
 
                 Button(presenter.authButtonTitle) {
                     Task {
-                        await interactor.startAuth()
+                        await interactor.startAuth(appOpener: UIApplication.shared)
                     }
                 }
                 .buttonStyle(.borderedProminent)
@@ -53,8 +53,9 @@ struct AuthView: View {
         // re-enable sign in button if not authenticated
         .onChange(of: scenePhase) { oldPhase, newPhase in
             Task {
+                let isActive = (newPhase == .active)
                 await interactor
-                    .resetIsAuthenticatingIfNeeded(forScenePhase: newPhase)
+                    .resetIsAuthenticatingIfNeeded(sceneActive: isActive)
             }
         }
     }

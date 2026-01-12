@@ -7,16 +7,21 @@
 //
 
 import Foundation
-import AuthenticationServices
-import SwiftUI
+
+
+@MainActor
+protocol AppOpener: Sendable {
+    func open(_ url: URL) async
+}
+
 
 protocol AuthInteracting: Sendable {
     var state: AuthState {get}
-    func startAuth() async
+    func startAuth(appOpener: AppOpener) async
     func setUpStateFetchingAccessToken(from: URL) async
     func loadExistingAuth() async
     func signOut() async
-    func resetIsAuthenticatingIfNeeded(forScenePhase phase: ScenePhase) async
+    func resetIsAuthenticatingIfNeeded(sceneActive: Bool) async
 }
 
 
@@ -57,7 +62,7 @@ final class AuthInteractor: AuthInteracting {
         }
     }
 
-    func startAuth() async {
+    func startAuth(appOpener: AppOpener) async {
         state.isAuthenticating = true
 
         do {
@@ -67,7 +72,7 @@ final class AuthInteractor: AuthInteracting {
             self.requestTokenSecret = secret
 
             if let url = service.getAuthorizationURL(token: token) {
-                await UIApplication.shared.open(url)
+                await appOpener.open(url)
             }
         } catch {
             state.authError = error as? AuthError ?? .networkError(error)
@@ -142,9 +147,9 @@ final class AuthInteractor: AuthInteracting {
         }
     }
 
-    func resetIsAuthenticatingIfNeeded(forScenePhase phase: ScenePhase) async {
+    func resetIsAuthenticatingIfNeeded(sceneActive: Bool) async {
         // if there was an error, this is already taken care
-        if state.hasError == false && phase == .active {
+        if state.hasError == false && sceneActive {
             state.isAuthenticating = false
         }
     }
